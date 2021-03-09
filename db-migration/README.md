@@ -17,19 +17,29 @@ Settings - Docker Engine -
 experimental를 true로 바꾸고 적용 후 restart
 
 다시 실행한다.
+```bash
 docker pull postgres:12-alpine
+```
 
+```bash
 docker run --name <container_name> -e <environment_variable> -p <host_ports:container_ports> -d <image>:<tag> 
 docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=1234 -d postgres:12-alpine
-  
+```
+
 Linux or PowerShell
+```bash
 docker exec -it postgres12 /bin/sh
+```
 
 git bash
+```bash
 winpty docker exec -it postgres12 bash
+```
 
-createdb --username=root --owner=root mytest_db
-psql mytest_db
+```bash
+bash-5.1# createdb --username=root --owner=root mytest_db
+bash-5.1# psql mytest_db
+```
 
 잘 접속되었는지 테스트해 본다.
 ```bash
