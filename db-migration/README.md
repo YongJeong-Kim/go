@@ -107,5 +107,9 @@ set-executionpolicy -s cu unrestricted
 ex) C:\Users\<username> 경로에 scoop 폴더가 있는데 이 폴더를 삭제하고 다시 설치하면 된다.
 
 ```bash
-cd migrate create -ext sql -dir db-migration -seq init_schema
+migrate create -ext sql -dir db-migration -seq init_schema
+```
+
+```bash
+$ migrate -path db-migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
 ```

@@ -18,4 +18,10 @@ gcreatedb:
 gdropdb:
 	winpty docker exec -it postgres12 dropdb mytest_db
 
-.PHONY: postgres createdb dropdb
+migrateup:
+	migrate -path db-migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
+
+migratedown:
+	migrate -path db-migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
+
+.PHONY: postgres createdb dropdb migrateup migratedown
