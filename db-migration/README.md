@@ -80,6 +80,7 @@ iwr -useb get.scoop.sh | iex
 ```
 
 아래와 같이 설치 에러 발생 시
+
 ![image](https://user-images.githubusercontent.com/30817924/110441620-5240ed00-80fd-11eb-811d-28ae577448b1.png)
 ```bash
 Set-ExecutionPolicy RemoteSigned -scope CurrentUser
