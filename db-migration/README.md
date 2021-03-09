@@ -33,8 +33,7 @@ psql mytest_db
 
 잘 접속되었는지 테스트해 본다.
 ```bash
-mytest_db=# select now()
-mytest_db-# ;
+mytest_db=# select now();
               now
 -------------------------------
  2021-03-07 09:48:31.256488+00
