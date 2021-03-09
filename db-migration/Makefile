@@ -19,9 +19,9 @@ gdropdb:
 	winpty docker exec -it postgres12 dropdb mytest_db
 
 migrateup:
-	migrate -path db-migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
+	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
 
 migratedown:
-	migrate -path db-migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
+	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
 
 .PHONY: postgres createdb dropdb migrateup migratedown
