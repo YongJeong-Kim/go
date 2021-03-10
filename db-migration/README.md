@@ -113,27 +113,33 @@ ex) C:\Users\<username> 경로에 scoop 폴더가 있는데 이 폴더를 삭제
 #### migrate할 sql 파일 생성
 ```bash
 $ migrate create -ext sql -dir migration -seq init_schema
-```
-```bash
 $ migrate create -ext sql -dir migration -seq add_users
 ```
 
 #### 모든 버전 db migrate up
 ```bash
 $ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
+// or
+$ make migrateup
 ```
 
 #### 버전 +1 db migrate up
 ```bash
 $ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up 1
+// or
+$ make migrateup1
 ```
 
 #### 모든 버전 db migrate down
 ```bash
 $ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
+// or
+$ make migratedown
 ```
 
 #### 버전 -1 db migrate down
 ```bash
 $ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down 1
+// or
+$ make migratedown1
 ```
