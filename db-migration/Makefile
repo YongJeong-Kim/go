@@ -21,7 +21,13 @@ gdropdb:
 migrateup:
 	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
 
+migrateup1:
+	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up 1
+
 migratedown:
 	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
+
+migratedown1:
+	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down 1
 
 .PHONY: postgres createdb dropdb migrateup migratedown

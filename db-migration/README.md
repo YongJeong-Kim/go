@@ -1,4 +1,4 @@
-docker postgres 설치
+#### docker postgres 설치
 
 ```bash
 $ docker pull postgres:12-alpine
@@ -41,10 +41,6 @@ $ winpty docker exec -it postgres12 bash
 ```bash
 bash-5.1# createdb --username=root --owner=root mytest_db
 bash-5.1# psql mytest_db
-```
-
-잘 접속되었는지 테스트해 본다.
-```bash
 mytest_db=# select now();
               now
 -------------------------------
@@ -75,14 +71,10 @@ PARTICULAR PURPOSE.
 This program built for i386-pc-mingw32
 ```
 
-
 ```bash
 $ winpty docker exec -it postgres12 createdb --username=root --owner=root mytest_db
 $ winpty docker exec -it postgres12 psql -U root mytest_db
 ```
-
-https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
-이 링크에서 migrate 설치한 후
 
 #### [scoop](https://scoop.sh/) 설치
 
@@ -118,10 +110,30 @@ $ scoop install migrate
 
 ex) C:\Users\<username> 경로에 scoop 폴더가 있는데 이 폴더를 삭제하고 다시 설치하면 된다.
 
+#### migrate할 sql 파일 생성
 ```bash
 $ migrate create -ext sql -dir migration -seq init_schema
 ```
+```bash
+$ migrate create -ext sql -dir migration -seq add_users
+```
 
+#### 모든 버전 db migrate up
 ```bash
 $ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up
+```
+
+#### 버전 +1 db migrate up
+```bash
+$ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose up 1
+```
+
+#### 모든 버전 db migrate down
+```bash
+$ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down
+```
+
+#### 버전 -1 db migrate down
+```bash
+$ migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down 1
 ```
