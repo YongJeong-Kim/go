@@ -1,6 +1,8 @@
 docker postgres 설치
-docker pull postgres:12-alpine
 
+```bash
+$ docker pull postgres:12-alpine
+```
 
 no matching manifest for windows/amd64 10.0.19041 in the manifest list entries
 발생 시
@@ -18,22 +20,22 @@ experimental를 true로 바꾸고 적용 후 restart
 
 다시 실행한다.
 ```bash
-docker pull postgres:12-alpine
+$ docker pull postgres:12-alpine
 ```
 
 ```bash
-docker run --name <container_name> -e <environment_variable> -p <host_ports:container_ports> -d <image>:<tag> 
-docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=1234 -d postgres:12-alpine
+$ docker run --name <container_name> -e <environment_variable> -p <host_ports:container_ports> -d <image>:<tag> 
+$ docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=1234 -d postgres:12-alpine
 ```
 
 Linux or PowerShell
 ```bash
-docker exec -it postgres12 /bin/sh
+$ docker exec -it postgres12 /bin/sh
 ```
 
 git bash
 ```bash
-winpty docker exec -it postgres12 bash
+$ winpty docker exec -it postgres12 bash
 ```
 
 ```bash
@@ -82,23 +84,34 @@ $ winpty docker exec -it postgres12 psql -U root mytest_db
 https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 이 링크에서 migrate 설치한 후
 
-scoop 사용하여 migrate 설치하기(윈도우 기준)
+scoop 설치하기
 https://scoop.sh/
-scoop 설치
+
 ```bash
-iwr -useb get.scoop.sh | iex
+$ iwr -useb get.scoop.sh | iex
+```
+
+또는
+
+```bash
+$ Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
 ```
 
 아래와 같이 설치 에러 발생 시
 
 ![image](https://user-images.githubusercontent.com/30817924/110441620-5240ed00-80fd-11eb-811d-28ae577448b1.png)
 ```bash
-Set-ExecutionPolicy RemoteSigned -scope CurrentUser
+$ Set-ExecutionPolicy RemoteSigned -scope CurrentUser
 ```
 
 ![image](https://user-images.githubusercontent.com/30817924/110442157-eb700380-80fd-11eb-9ebc-9c6c457eedd0.png)
 ```bash
-set-executionpolicy -s cu unrestricted
+$ set-executionpolicy -s cu unrestricted
+```
+
+scoop 설치하기
+```bash
+$ scoop install migrate
 ```
 
 아래 그림처럼 설치는 되었다고 나오지만 scoop 명령어가 동작하지 않을 때
@@ -107,7 +120,7 @@ set-executionpolicy -s cu unrestricted
 ex) C:\Users\<username> 경로에 scoop 폴더가 있는데 이 폴더를 삭제하고 다시 설치하면 된다.
 
 ```bash
-migrate create -ext sql -dir migration -seq init_schema
+$ migrate create -ext sql -dir migration -seq init_schema
 ```
 
 ```bash
