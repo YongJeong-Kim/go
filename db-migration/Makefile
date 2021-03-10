@@ -30,4 +30,4 @@ migratedown:
 migratedown1:
 	migrate -path migration -database "postgresql://root:1234@localhost:5432/mytest_db?sslmode=disable" -verbose down 1
 
-.PHONY: postgres createdb dropdb migrateup migratedown
+.PHONY: postgres createdb dropdb migrateup migrateup1 migratedown migratedown1
