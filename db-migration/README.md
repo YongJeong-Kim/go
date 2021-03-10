@@ -28,12 +28,12 @@ $ docker run --name <container_name> -e <environment_variable> -p <host_ports:co
 $ docker run --name postgres12 -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=1234 -d postgres:12-alpine
 ```
 
-Linux or PowerShell
+#### Linux or PowerShell
 ```bash
 $ docker exec -it postgres12 /bin/sh
 ```
 
-git bash
+#### git bash
 ```bash
 $ winpty docker exec -it postgres12 bash
 ```
@@ -84,8 +84,7 @@ $ winpty docker exec -it postgres12 psql -U root mytest_db
 https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 이 링크에서 migrate 설치한 후
 
-scoop 설치하기
-https://scoop.sh/
+#### [scoop](https://scoop.sh/) 설치
 
 ```bash
 $ iwr -useb get.scoop.sh | iex
@@ -109,7 +108,7 @@ $ Set-ExecutionPolicy RemoteSigned -scope CurrentUser
 $ set-executionpolicy -s cu unrestricted
 ```
 
-scoop 설치하기
+#### [golang-migrate](https://github.com/golang-migrate/migrate/tree/master/cmd/migrate) 설치
 ```bash
 $ scoop install migrate
 ```
