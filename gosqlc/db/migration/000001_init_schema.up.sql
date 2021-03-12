@@ -3,7 +3,7 @@ CREATE TABLE `accounts` (
 	`owner` VARCHAR(255) NOT NULL,
 	`balance` BIGINT(20) NOT NULL,
 	`currency` VARCHAR(255) NOT NULL,
-	`created_at` DATETIME NOT NULL DEFAULT '',
+	`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`)
 )
 COLLATE='utf8_general_ci'
@@ -14,7 +14,7 @@ CREATE TABLE `entries` (
 	`id` BIGINT(20) NOT NULL AUTO_INCREMENT,
 	`account_id` BIGINT(20) NOT NULL,
 	`amount` BIGINT(20) NOT NULL,
-	`created_at` DATETIME NOT NULL DEFAULT '',
+	`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	INDEX `FK_entries_accounts` (`account_id`),
 	CONSTRAINT `FK_entries_accounts` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`)
@@ -28,7 +28,7 @@ CREATE TABLE `transfers` (
 	`from_account_id` BIGINT(20) NOT NULL,
 	`to_account_id` BIGINT(20) NOT NULL,
 	`amount` BIGINT(20) NOT NULL,
-	`created_at` DATETIME NOT NULL DEFAULT '',
+	`created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`),
 	INDEX `FK_transfers_accounts` (`from_account_id`),
 	INDEX `FK_transfers_accounts_2` (`to_account_id`),
