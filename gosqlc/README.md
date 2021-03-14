@@ -58,3 +58,8 @@ $ create database <database_name> default character set utf8 collate utf8_genera
 ```bash
 $ sqlc init
 ```
+
+### [mysql driver](https://github.com/go-sql-driver/mysql/) 설치
+```bash
+$ go get -u github.com/go-sql-driver/mysql
+```
