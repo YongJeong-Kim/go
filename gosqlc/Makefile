@@ -19,16 +19,16 @@ gdropdb:
 	winpty docker exec -it postgres12 dropdb mytest_db
 
 migrateup:
-	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:3306)/go" -verbose up
+	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:13306)/go" -verbose up
 
 migrateup1:
-	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:3306)/go" -verbose up 1
+	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:13306)/go" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:3306)/go" -verbose down
+	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:13306)/go" -verbose down
 
 migratedown1:
-	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:3306)/go" -verbose down 1
+	migrate -path db/migration -database "mysql://root:1234@tcp(localhost:13306)/go" -verbose down 1
 
 sqlc:
 	sqlc generate

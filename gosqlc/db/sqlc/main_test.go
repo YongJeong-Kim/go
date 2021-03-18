@@ -11,7 +11,7 @@ import (
 
 const (
 	dbDriver = "mysql"
-	dbSource = "root:1234@/go"
+	dbSource = "root:1234@tcp(localhost:13306)/go?parseTime=true"
 )
 
 var testQueries *Queries

@@ -1,4 +1,4 @@
--- name: CreateAccount :exec
+-- name: CreateAccount :execresult
 INSERT INTO accounts (
   owner,
   balance,
