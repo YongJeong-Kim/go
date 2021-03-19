@@ -36,7 +36,7 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	return tx.Commit()
 }
 
-type TransferTxParam struct {
+type TransferTxParams struct {
 	FromAccountID int64 `json:"from_account_id"`
 	ToAccountID   int64 `json:"to_account_id"`
 	Amount        int64 `json:"amount"`
@@ -50,33 +50,55 @@ type TransferTxResult struct {
 	ToEntry     Entry    `json:"to_entry"`
 }
 
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParam) (TransferTxResult, error) {
+func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
 
-		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParam{
-			FromAcocuntID: arg.FromAccountID,
+		createdTransferId, _ := q.CreateTransfer(ctx, CreateTransferParams{
+			FromAccountID: arg.FromAccountID,
 			ToAccountID:   arg.ToAccountID,
 			Amount:        arg.Amount,
 		})
+		transferId, _ := createdTransferId.LastInsertId()
+		result.Transfer, err = q.GetTransfer(ctx, transferId)
+
+		fmt.Println([]int{1, 2}[3])
+		//result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParam{
+		//	FromAcocuntID: arg.FromAccountID,
+		//	ToAccountID:   arg.ToAccountID,
+		//	Amount:        arg.Amount,
+		//})
 		if err != nil {
 			return err
 		}
 
-		result.FromEntry, err := q.createEntry(ctx, CreateEntryParams{
+		createdFromEntryId, _ := q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.FromAccountID,
+			Amount:    -arg.Amount,
+		})
+		fromEntryId, _ := createdFromEntryId.LastInsertId()
+		result.FromEntry, err = q.GetEntry(ctx, fromEntryId)
+		/*result.FromEntry, err := q.createEntry(ctx, CreateEntryParams{
 			AccountID: arg.FromAccountID,
 			Amount: -arg.Amount,
-		})
+		})*/
 		if err != nil {
 			return err
 		}
 
-		result.ToEntry, err := q.createEntry(ctx, CreateEntryParams{
+		createdToEntryId, _ := q.CreateEntry(ctx, CreateEntryParams{
+			AccountID: arg.ToAccountID,
+			Amount:    arg.Amount,
+		})
+		toEntryId, _ := createdToEntryId.LastInsertId()
+		result.ToEntry, err = q.GetEntry(ctx, toEntryId)
+
+		/*result.ToEntry, err := q.createEntry(ctx, CreateEntryParams{
 			AccountID: arg.ToAccountID,
 			Amount: arg.Amount,
-		})
+		})*/
 		if err != nil {
 			return err
 		}

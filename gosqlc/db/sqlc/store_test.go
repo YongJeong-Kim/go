@@ -35,7 +35,7 @@ func TestTransferTx(t *testing.T) {
 	}
 
 	// check results
-	existed := make(map[int]bool)
+	//existed := make(map[int]bool)
 
 	for i := 0; i < n; i++ {
 		err := <-errs
@@ -78,12 +78,12 @@ func TestTransferTx(t *testing.T) {
 		require.NoError(t, err)
 
 		// check accounts
-		fromAccount := result.FromAccount
+		/*fromAccount := result.FromAccount
 		require.NotEmpty(t, fromAccount)
 		require.Equal(t, account1.ID, fromAccount.ID)
 
 		toAccount := result.ToAccount
 		require.NotEmpty(t, toAccount)
-		require.Equal(t, account2.ID, toAccount.ID)
+		require.Equal(t, account2.ID, toAccount.ID)*/
 	}
 }

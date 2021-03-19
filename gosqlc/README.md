@@ -36,7 +36,7 @@ docker - Settings - Docker Engine 에서 아래의 내용을
 ### docker mysql image 생성
 ```bash
 $ docker run --name <some_mysql_name> -e MYSQL_ROOT_PASSWORD=<password> -p <host_ports:container_ports> -d mysql:<tag>
-$ docker run --name mysql8 -e MYSQL_ROOT_PASSWORD=1234 -p 3306:3306 -d mysql:latest
+$ docker run --name mysql8 -e MYSQL_ROOT_PASSWORD=1234 -e TZ='Asia/Seoul' -p 3306:3306 -d mysql:latest
 ```
 
 ### docker mysql container 접속
@@ -53,7 +53,7 @@ $ docker exec -it mysql8 mysql -u root -p
 
 #### database 생성
 ```bash
-$ create database <database_name> default character set utf8 collate utf8_general_ci
+$ create database <database_name> default character set utf8 collate utf8_general_ci;
 ```
 
 ### sqlc.yaml 설정 파일 생성하기
