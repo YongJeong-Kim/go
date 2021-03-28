@@ -1,0 +1,50 @@
+name: ci-test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mariadb:
+        image: mariadb:latest
+        ports:
+          - 13306:3306
+        env:
+#          MYSQL_USER: root
+#          MYSQL_PASSWORD: 1234
+          MYSQL_DATABASE: go
+          MYSQL_ROOT_PASSWORD: 1234
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=5s
+          --health-timeout=2s
+          --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.16
+
+    - name: Install golang-migrate
+      run: |
+        curl -L https://github.com/golang-migrate/migrate/releases/download/v4.14.1/migrate.linux-amd64.tar.gz | tar xvz
+        sudo mv migrate.linux-amd64 /usr/bin/migrate
+        which migrate
+
+      working-directory: gosqlc
+
+    - name: Run migrations
+      run: make migrateup
+
+    - name: Test
+      run: make test
