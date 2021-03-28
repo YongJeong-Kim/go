@@ -41,10 +41,10 @@ jobs:
         sudo mv migrate.linux-amd64 /usr/bin/migrate
         which migrate
 
-      working-directory: ./gosqlc
-
     - name: Run migrations
+      working-directory: ./gosqlc
       run: make migrateup
 
     - name: Test
+      working-directory: ./gosqlc
       run: make test
