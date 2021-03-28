@@ -64,7 +64,6 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 		transferId, _ := createdTransferId.LastInsertId()
 		result.Transfer, err = q.GetTransfer(ctx, transferId)
 
-		fmt.Println([]int{1, 2}[3])
 		//result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParam{
 		//	FromAcocuntID: arg.FromAccountID,
 		//	ToAccountID:   arg.ToAccountID,

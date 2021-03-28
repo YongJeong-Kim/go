@@ -10,10 +10,11 @@ import (
 
 func TestCreateEntry(t *testing.T) {
 	account := createRandomAccount(t)
+	randomAmount := util.RandomMoney()
 
 	createdEntryId, _ := testQueries.CreateEntry(context.Background(), CreateEntryParams{
 		AccountID: account.ID,
-		Amount:    util.RandomMoney(),
+		Amount:    randomAmount,
 	})
 
 	entryId, _ := createdEntryId.LastInsertId()
@@ -23,7 +24,7 @@ func TestCreateEntry(t *testing.T) {
 	require.NotEmpty(t, entry)
 
 	require.Equal(t, account.ID, entry.AccountID)
-	require.Equal(t, entry.Amount, 1111)
+	require.Equal(t, entry.Amount, randomAmount)
 
 	require.NotZero(t, entry.CreatedAt)
 	require.NotZero(t, account.CreatedAt)
