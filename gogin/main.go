@@ -5,17 +5,17 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/yongjeong-kim/go/api"
 	db "github.com/yongjeong-kim/go/db/sqlc"
+	"github.com/yongjeong-kim/go/util"
 	"log"
 )
 
-const (
-	dbDriver      = "mysql"
-	dbSource      = "root:1234@tcp(localhost:13306)/go?parseTime=true"
-	serverAddress = "0.0.0.0:8080"
-)
-
 func main() {
-	conn, err := sql.Open(dbDriver, dbSource)
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config: ", err)
+	}
+
+	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db: ", err)
 	}
@@ -24,7 +24,7 @@ func main() {
 
 	server := api.NewServer(store)
 
-	err = server.Start(serverAddress)
+	err = server.Start(config.ServerAddress)
 	if err != nil {
 		log.Fatal("cannot start server: ", err)
 	}
