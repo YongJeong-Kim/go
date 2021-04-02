@@ -1,4 +1,4 @@
-module github.com/yongjeong-kim/go
+module github.com/yongjeong-kim/go/gogin
 
 go 1.16
 
@@ -6,6 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/golang/mock v1.5.0 // indirect
 	github.com/golang/protobuf v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
