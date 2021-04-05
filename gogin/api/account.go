@@ -33,7 +33,7 @@ func (server *Server) createAccount(ctx *gin.Context) {
 	}
 
 	id, err := accountId.LastInsertId()
-	account, err := server.store.GetAccouont(ctx, id)
+	account, err := server.store.GetAccount(ctx, id)
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return
@@ -53,9 +53,9 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
-	account, err := server.store.GetAccouont(ctx, req.ID)
+	account, err := server.store.GetAccount(ctx, req.ID)
 	if err != nil {
-		if sql.ErrNoRows != nil {
+		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
 			return
 		}

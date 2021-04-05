@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/yongjeong-kim/go/api"
-	db "github.com/yongjeong-kim/go/db/sqlc"
-	"github.com/yongjeong-kim/go/util"
+	"github.com/yongjeong-kim/go/gogin/api"
+	db "github.com/yongjeong-kim/go/gogin/db/sqlc"
+	"github.com/yongjeong-kim/go/gogin/util"
 	"log"
 )
 

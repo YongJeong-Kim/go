@@ -7,7 +7,7 @@ INSERT INTO accounts (
   ?, ?, ?
 );
 
--- name: GetAccouont :one
+-- name: GetAccount :one
 SELECT * FROM accounts
 WHERE id = ? LIMIT 1;
 

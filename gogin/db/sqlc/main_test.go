@@ -2,7 +2,7 @@ package db
 
 import (
 	"database/sql"
-	"github.com/yongjeong-kim/go/util"
+	"github.com/yongjeong-kim/go/gogin/util"
 	"log"
 	"os"
 	"testing"
