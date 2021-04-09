@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yongjeong-kim/go/util"
+	"github.com/yongjeong-kim/go/gogin/util"
 )
 
 func createRandomAccount(t *testing.T) Account {
@@ -21,7 +21,7 @@ func createRandomAccount(t *testing.T) Account {
 	accountId, _ := testQueries.CreateAccount(context.Background(), arg)
 	id, _ := accountId.LastInsertId()
 
-	account, err := testQueries.GetAccouont(context.Background(), id)
+	account, err := testQueries.GetAccount(context.Background(), id)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, account)
@@ -42,7 +42,7 @@ func TestCreateAccount(t *testing.T) {
 
 func TestGetAccount(t *testing.T) {
 	account1 := createRandomAccount(t)
-	account2, err := testQueries.GetAccouont(context.Background(), account1.ID)
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, account2)
@@ -63,7 +63,7 @@ func TestUpdateAccount(t *testing.T) {
 	}
 	err := testQueries.UpdateAccount(context.Background(), arg)
 	require.NoError(t, err)
-	account2, err := testQueries.GetAccouont(context.Background(), account1.ID)
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
 
 	require.NoError(t, err)
 	require.NotEmpty(t, account2)
@@ -79,7 +79,7 @@ func TestDeleteAccount(t *testing.T) {
 	err := testQueries.DeleteAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	account2, err := testQueries.GetAccouont(context.Background(), account1.ID)
+	account2, err := testQueries.GetAccount(context.Background(), account1.ID)
 	require.Error(t, err)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 	require.Empty(t, account2)

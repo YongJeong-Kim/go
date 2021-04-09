@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/yongjeong-kim/go/util"
+	"github.com/yongjeong-kim/go/gogin/util"
 )
 
 func TestCreateEntry(t *testing.T) {
