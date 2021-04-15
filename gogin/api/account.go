@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"github.com/go-sql-driver/mysql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +32,14 @@ func (server *Server) createAccount(ctx *gin.Context) {
 
 	accountId, err := server.store.CreateAccount(ctx, arg)
 	if err != nil {
+		/*if pgErr, ok := err.(*pg.Error); ok {
+			log.Println(pgErr.Code.Name())
+		}*/
+		if mysqlErr, ok := err.(*mysql.MySQLError); ok {
+			log.Println(mysqlErr.Number)
+			log.Println(mysqlErr.Error())
+			log.Println(mysqlErr.Message)
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
