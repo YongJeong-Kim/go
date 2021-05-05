@@ -5,10 +5,9 @@ package db
 
 import (
 	"context"
-	"database/sql"
 )
 
-const createUser = `-- name: CreateUser :execresult
+const createUser = `-- name: CreateUser :exec
 INSERT INTO users (
   username,
   hashed_password,
@@ -26,13 +25,14 @@ type CreateUserParams struct {
 	Email          string `json:"email"`
 }
 
-func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (sql.Result, error) {
-	return q.db.ExecContext(ctx, createUser,
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
+	_, err := q.db.ExecContext(ctx, createUser,
 		arg.Username,
 		arg.HashedPassword,
 		arg.FullName,
 		arg.Email,
 	)
+	return err
 }
 
 const getUser = `-- name: GetUser :one

@@ -9,7 +9,7 @@ import (
 )
 
 func createRandomUser(t *testing.T) User {
-	hashedPassword, err := util.HashedPassword(util.RandomString(6))
+	hashedPassword, err := util.HashPassword(util.RandomString(6))
 	require.NoError(t, err)
 
 	arg := CreateUserParams{
@@ -19,7 +19,7 @@ func createRandomUser(t *testing.T) User {
 		Email:          util.RandomEmail(),
 	}
 
-	_, err = testQueries.CreateUser(context.Background(), arg)
+	err = testQueries.CreateUser(context.Background(), arg)
 	require.NoError(t, err)
 
 	user, err := testQueries.GetUser(context.Background(), arg.Username)

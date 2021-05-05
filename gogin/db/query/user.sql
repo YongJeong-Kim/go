@@ -1,4 +1,4 @@
--- name: CreateUser :execresult
+-- name: CreateUser :exec
 INSERT INTO users (
   username,
   hashed_password,

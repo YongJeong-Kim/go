@@ -12,7 +12,7 @@ import (
 
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`
-	Password string `json:"password" binding:"required"`
+	Password string `json:"password" binding:"required,min=6"`
 	FullName string `json:"full_name" binding:"required"`
 	Email    string `json:"email" binding:"required,email"`
 }
@@ -32,7 +32,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	password, err := util.HashedPassword(req.Password)
+	password, err := util.HashPassword(req.Password)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
@@ -45,7 +45,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		Email:          req.Email,
 	}
 
-	_, err = server.store.CreateUser(ctx, arg)
+	err = server.store.CreateUser(ctx, arg)
 	if err != nil {
 		/*if pgErr, ok := err.(*pg.Error); ok {
 			log.Println(pgErr.Code.Name())
@@ -64,18 +64,18 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUser(ctx, req.Username)
-	if err != nil {
-		ctx.JSON(http.StatusNotFound, errorResponse(err))
-		return
-	}
+	//user, err := server.store.GetUser(ctx, req.Username)
+	//if err != nil {
+	//	ctx.JSON(http.StatusNotFound, errorResponse(err))
+	//	return
+	//}
 
 	res := createUserResponse{
-		Username:          user.Username,
-		FullName:          user.FullName,
-		Email:             user.Email,
-		PasswordChangedAt: user.PasswordChangedAt,
-		CreatedAt:         user.CreatedAt,
+		Username: arg.Username,
+		FullName: arg.FullName,
+		Email:    arg.Email,
+		//PasswordChangedAt: arg.PasswordChangedAt,
+		//CreatedAt:         arg.CreatedAt,
 	}
 
 	ctx.JSON(http.StatusCreated, res)

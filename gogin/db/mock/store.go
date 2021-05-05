@@ -82,12 +82,11 @@ func (mr *MockStoreMockRecorder) CreateTransfer(arg0, arg1 interface{}) *gomock.
 }
 
 // CreateUser mocks base method.
-func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) (sql.Result, error) {
+func (m *MockStore) CreateUser(arg0 context.Context, arg1 db.CreateUserParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1)
-	ret0, _ := ret[0].(sql.Result)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // CreateUser indicates an expected call of CreateUser.
