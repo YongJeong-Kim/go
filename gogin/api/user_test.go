@@ -5,6 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
+	"testing"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
 	"github.com/golang/mock/gomock"
@@ -12,11 +18,6 @@ import (
 	mockdb "github.com/yongjeong-kim/go/gogin/db/mock"
 	db "github.com/yongjeong-kim/go/gogin/db/sqlc"
 	"github.com/yongjeong-kim/go/gogin/util"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"reflect"
-	"testing"
 )
 
 type eqCreateUserParamsMatcher struct {
@@ -181,7 +182,7 @@ func TestCreateUserAPI(t *testing.T) {
 			store := mockdb.NewMockStore(ctrl)
 			tc.buildStubs(store)
 
-			server := NewServer(store)
+			server := newTestServer(t, store)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
