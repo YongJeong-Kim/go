@@ -52,15 +52,15 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-	password, err := util.HashPassword(req.Password)
+	hashedPassword, err := util.HashPassword(req.Password)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	arg := db.CreateUserParams{
 		Username:       req.Username,
-		HashedPassword: password,
+		HashedPassword: hashedPassword,
 		FullName:       req.FullName,
 		Email:          req.Email,
 	}

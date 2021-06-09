@@ -2,7 +2,9 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/go-sql-driver/mysql"
+	"github.com/yongjeong-kim/go/gogin/token"
 	"log"
 	"net/http"
 
@@ -73,6 +75,13 @@ func (server *Server) getAccount(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
