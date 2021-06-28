@@ -3,17 +3,17 @@ package api
 import (
 	"database/sql"
 	"errors"
-	"github.com/go-sql-driver/mysql"
-	"github.com/yongjeong-kim/go/gogin/token"
 	"log"
 	"net/http"
+
+	"github.com/go-sql-driver/mysql"
+	"github.com/yongjeong-kim/go/gogin/token"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/yongjeong-kim/go/gogin/db/sqlc"
 )
 
 type createAccountRequest struct {
-	Owner    string `json:"owner" binding:"required"`
 	Currency string `json:"currency" binding:"required,currency"`
 	// Currency string `json:"currency" binding:"required,oneof=USD EUR"`
 }
@@ -26,8 +26,9 @@ func (server *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	arg := db.CreateAccountParams{
-		Owner:    req.Owner,
+		Owner:    authPayload.Username,
 		Balance:  0,
 		Currency: req.Currency,
 	}
@@ -101,7 +102,9 @@ func (server *Server) listAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	args := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) + req.PageSize,
 	}
