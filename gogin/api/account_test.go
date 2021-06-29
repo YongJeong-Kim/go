@@ -178,13 +178,15 @@ func TestCreateAccountAPI(t *testing.T) {
 		// 			Balance:  0,
 		// 		}
 
+		// 		var cd sql.Result
 		// 		store.EXPECT().
 		// 			CreateAccount(gomock.Any(), gomock.Eq(arg)).
-		// 			DoAndReturn(func(a sql.Result) (sql.Result, error) {
-		// 				return a, nil
-		// 			}).
-		// 			Times(1)
-		// 		// Return(inter, nil)
+		// 			// DoAndReturn(func(ctx context.Context, param db.CreateAccountParams) (sql.Result, error) {
+		// 			// var cd sql.Result
+		// 			// return cd, nil
+		// 			// }).
+		// 			Times(1).
+		// 			Return(cd, nil)
 		// 	},
 		// 	checkResponse: func(recorder *httptest.ResponseRecorder) {
 		// 		require.Equal(t, http.StatusOK, recorder.Code)
@@ -216,13 +218,12 @@ func TestCreateAccountAPI(t *testing.T) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
+				var doNotCare sql.Result
+
 				store.EXPECT().
 					CreateAccount(gomock.Any(), gomock.Any()).
-					DoAndReturn(func(a sql.Result) (sql.Result, error) {
-						return a, sql.ErrConnDone
-					}).
-					Times(1)
-				// Return(aq["aa"], sql.ErrConnDone)
+					Times(1).
+					Return(doNotCare, sql.ErrConnDone)
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusInternalServerError, recorder.Code)
