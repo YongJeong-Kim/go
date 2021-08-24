@@ -3,8 +3,9 @@ package token
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var (
@@ -22,7 +23,7 @@ type AccessTokenPayload struct {
 	RtExpiredAt time.Time `json:"rt_expired_at"`
 }
 
-func NewAccessToken(username string, atDuration time.Duration, rtDuration time.Duration) (*AccessTokenPayload, error) {
+func NewPayload(username string, atDur time.Duration, rtDur time.Duration) (*AccessTokenPayload, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("generate token id failed. %s ", err.Error())
@@ -32,10 +33,10 @@ func NewAccessToken(username string, atDuration time.Duration, rtDuration time.D
 		ID:          tokenID,
 		Username:    username,
 		IssuedAt:    time.Now(),
-		ExpiredAt:   time.Now().Add(atDuration),
+		ExpiredAt:   time.Now().Add(atDur),
 		AccessUUID:  uuid.NewString(),
 		RefreshUUID: uuid.NewString(),
-		RtExpiredAt: time.Now().Add(rtDuration),
+		RtExpiredAt: time.Now().Add(rtDur),
 	}, nil
 }
 
@@ -56,22 +57,22 @@ type Payload struct {
 	RefreshUUID string    `json:"refresh_uuid"`
 }
 
-func NewPayload(username string, duration time.Duration) (*Payload, error) {
-	tokenID, err := uuid.NewRandom()
-	if err != nil {
-		return nil, err
-	}
+// func NewPayload(username string, duration time.Duration) (*Payload, error) {
+// 	tokenID, err := uuid.NewRandom()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	payload := &Payload{
-		ID:          tokenID,
-		Username:    username,
-		IssuedAt:    time.Now(),
-		ExpiredAt:   time.Now().Add(duration),
-		AccessUUID:  uuid.NewString(),
-		RefreshUUID: uuid.NewString(),
-	}
-	return payload, nil
-}
+// 	payload := &Payload{
+// 		ID:          tokenID,
+// 		Username:    username,
+// 		IssuedAt:    time.Now(),
+// 		ExpiredAt:   time.Now().Add(duration),
+// 		AccessUUID:  uuid.NewString(),
+// 		RefreshUUID: uuid.NewString(),
+// 	}
+// 	return payload, nil
+// }
 
 func ExpiredValid(payload Payload) error {
 	if time.Now().After(payload.ExpiredAt) {
