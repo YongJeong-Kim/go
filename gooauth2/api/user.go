@@ -15,7 +15,7 @@ type User struct {
 	Username string `json:"username"`
 }
 
-func Login(c *gin.Context) {
+func (server *Server) login(c *gin.Context) {
 	var u User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, "Invalid JSON provided.")
@@ -32,6 +32,18 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	tokenDuration := token.JWTDuration{
+		AccessTokenDuration:  server.config.AccessTokenDuration,
+		RefreshTokenDuration: server.config.RefreshTokenDuration,
+	}
+
+	token, err := server.token.CreateToken(u.Username, tokenDuration)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, token)
 }
 
 func (server *Server) CreateAuth(userID int64, payload *token.AccessTokenPayload) error {

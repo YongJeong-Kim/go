@@ -14,7 +14,7 @@ type Server struct {
 }
 
 func NewServer(app config.App) (*Server, error) {
-	token, err := token.NewJWTMaker(app.TokenSymmetricKey)
+	token, err := token.NewJWTMaker(app.AccessSecret, app.RefreshSecret)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot load config. %s ", err.Error())
 	}

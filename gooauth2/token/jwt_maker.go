@@ -3,10 +3,8 @@ package token
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"time"
-
 	"github.com/golang-jwt/jwt"
+	"time"
 )
 
 type JWTMaker struct {
@@ -14,57 +12,47 @@ type JWTMaker struct {
 	refreshSecret string
 }
 
-func (maker *JWTMaker) CreateToken(username string, atDur time.Duration, rtDur time.Duration) (interface{}, error) {
-	payload, err := NewPayload(username, atDur, rtDur)
+type JWTDuration struct {
+	AccessTokenDuration  time.Duration
+	RefreshTokenDuration time.Duration
+}
+
+func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (map[string]string, error) {
+	payload, err := NewPayload(username, duration)
 	if err != nil {
 		return nil, fmt.Errorf("invalid payload : %s ", err.Error())
 	}
 
-	// td := &AccessTokenPayload{}
-
-	// var err error
-
-	// os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")
-	// atClaims := jwt.MapClaims{}
-	// atClaims["authorized"] = true
-	// atClaims["access_uuid"] = td.AccessUUID
-	// atClaims["user_id"] = userID
-	// atClaims["exp"] = td.AtExpires
-	// at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	// td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
-
 	atClaims := jwt.MapClaims{}
 	atc, _ := json.Marshal(payload.accessTokenPayload)
-	json.Unmarshal(atc, &atClaims)
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	at.SignedString([]byte(maker.accessSecret))
+	err = json.Unmarshal(atc, &atClaims)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot unmarshal access token claims : %s ", err.Error())
+	}
 
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// err = os.Setenv("REFRESH_SECRET", "mcmvmkmsdnfsdmfdsjf")
-	// if err != nil {
-	// 	return nil, err
-	// }
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	accessToken, err := at.SignedString([]byte(maker.accessSecret))
+	if err != nil {
+		return nil, fmt.Errorf("Cannot signed string access token: %s ", err.Error())
+	}
 
 	rtClaims := jwt.MapClaims{}
 	rtc, _ := json.Marshal(payload.refreshTokenPayload)
-	json.Unmarshal(rtc, &rtClaims)
-	// rtClaims["refresh_uuid"] = td.RefreshUUID
-	// rtClaims["user_id"] = userID
-	// rtClaims["exp"] = td.RtExpires
-	// rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClamis)
-	rt.SignedString([]byte(maker.refreshSecret))
-	// payload.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
-	// if err != nil {
-	// 	return nil, err
-	// }
-	return {
-		access_token: at,
-		refresh_token: rt,
+	err = json.Unmarshal(rtc, &rtClaims)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot unmarshal refresh token claims : %s ", err.Error())
+	}
+
+	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
+	refreshToken, err := rt.SignedString([]byte(maker.refreshSecret))
+	if err != nil {
+		return nil, fmt.Errorf("Cannot signed string refresh token: %s ", err.Error())
+	}
+
+	return map[string]string{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
 	}, nil
-	// return td, nil
 }
 
 func (maker *JWTMaker) VerifyToken(payload string) (*Payload, error) {
@@ -73,21 +61,24 @@ func (maker *JWTMaker) VerifyToken(payload string) (*Payload, error) {
 
 const minSecretKeySize = 32
 
-func NewJWTMaker(secretKey string) (Maker, error) {
-	if len(secretKey) < minSecretKeySize {
+func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
+	if len(accessSecret) < minSecretKeySize {
 		return nil, fmt.Errorf("must be at least %d characters", minSecretKeySize)
 	}
-	return &JWTMaker{secretKey}, nil
+	return &JWTMaker{
+		accessSecret,
+		refreshSecret,
+	}, nil
 }
 
-type TokenDetails struct {
+/*type TokenDetails struct {
 	AccessToken  string
 	RefreshToken string
 	AccessUUID   string
 	RefreshUUID  string
 	AtExpires    int64
 	RtExpires    int64
-}
+}*/
 
 //func CreateToken(userID uint64) (*TokenDetails, error) {
 //	td := &TokenDetails{}

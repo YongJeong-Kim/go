@@ -23,7 +23,7 @@ type AccessTokenPayload struct {
 	RtExpiredAt time.Time `json:"rt_expired_at"`
 }
 
-func NewPayload(username string, atDur time.Duration, rtDur time.Duration) (*Payload, error) {
+func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 	atID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("generate access token id failed. %s ", err.Error())
@@ -41,16 +41,16 @@ func NewPayload(username string, atDur time.Duration, rtDur time.Duration) (*Pay
 			ID:          atID,
 			Username:    username,
 			IssuedAt:    time.Now(),
-			ExpiredAt:   time.Now().Add(atDur),
+			ExpiredAt:   time.Now().Add(duration.AccessTokenDuration),
 			AccessUUID:  uuid.NewString(),
 			RefreshUUID: refreshUUID,
-			RtExpiredAt: time.Now().Add(rtDur),
+			RtExpiredAt: time.Now().Add(duration.RefreshTokenDuration),
 		},
 		refreshTokenPayload: RefreshTokenPayload{
 			ID:          rtID,
 			Username:    username,
 			IssuedAt:    time.Now(),
-			ExpiredAt:   time.Now().Add(rtDur),
+			ExpiredAt:   time.Now().Add(duration.RefreshTokenDuration),
 			RefreshUUID: refreshUUID,
 		},
 	}, nil

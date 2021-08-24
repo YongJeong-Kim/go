@@ -8,8 +8,9 @@ import (
 type App struct {
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	AccessSecret         string        `mapstructure:"ACCESS_SECRET"`
 	RefreshSecret        string        `mapstructure:"REFRESH_SECRET"`
-	TokenSymmetricKey    string        `mapstructur:"TOKEN_SYMMETRIC_KEY"`
+	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 }
 
 func LoadConfig(path string) (config App, err error) {
