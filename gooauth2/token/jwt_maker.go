@@ -2,38 +2,38 @@ package token
 
 import (
 	"fmt"
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"os"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 )
 
 type JWTMaker struct {
 	secretKey string
 }
 
-func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (*TokenDetails, error) {
-	payload, err := NewPayload(username, duration)
+func (maker *JWTMaker) CreateToken(username string, atDur time.Duration, rtDur time.Duration) (*AccessTokenPayload, error) {
+	payload, err := NewPayload(username, atDur, rtDur)
 	if err != nil {
-		return "", fmt.Errorf("invalid payload : %s ", err.Error())
+		return nil, fmt.Errorf("invalid payload : %s ", err.Error())
 	}
 
-	td := &TokenDetails{}
-	td.AtExpires = time.Now().Add(time.Minute * 15).Unix()
-	td.AccessUUID = uuid.NewString()
-	td.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
-	td.RefreshUUID = uuid.NewString()
+	// td := &AccessTokenPayload{}
 
-	var err error
+	// var err error
 
-	os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")
-	atClaims := jwt.MapClaims{}
-	atClaims["authorized"] = true
-	atClaims["access_uuid"] = td.AccessUUID
-	atClaims["user_id"] = userID
-	atClaims["exp"] = td.AtExpires
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-	td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+	// os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")
+	// atClaims := jwt.MapClaims{}
+	// atClaims["authorized"] = true
+	// atClaims["access_uuid"] = td.AccessUUID
+	// atClaims["user_id"] = userID
+	// atClaims["exp"] = td.AtExpires
+	// at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	// td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
+
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
+	at.SignedString([]byte(maker.secretKey))
+
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (*To
 	rtClaims["user_id"] = userID
 	rtClaims["exp"] = td.RtExpires
 	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	td.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
+	payload.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
 	if err != nil {
 		return nil, err
 	}
