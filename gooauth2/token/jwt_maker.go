@@ -1,6 +1,7 @@
 package token
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -9,10 +10,11 @@ import (
 )
 
 type JWTMaker struct {
-	secretKey string
+	accessSecret  string
+	refreshSecret string
 }
 
-func (maker *JWTMaker) CreateToken(username string, atDur time.Duration, rtDur time.Duration) (*AccessTokenPayload, error) {
+func (maker *JWTMaker) CreateToken(username string, atDur time.Duration, rtDur time.Duration) (interface{}, error) {
 	payload, err := NewPayload(username, atDur, rtDur)
 	if err != nil {
 		return nil, fmt.Errorf("invalid payload : %s ", err.Error())
@@ -31,27 +33,38 @@ func (maker *JWTMaker) CreateToken(username string, atDur time.Duration, rtDur t
 	// at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	// td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
 
-	at := jwt.NewWithClaims(jwt.SigningMethodHS256, payload)
-	at.SignedString([]byte(maker.secretKey))
+	atClaims := jwt.MapClaims{}
+	atc, _ := json.Marshal(payload.accessTokenPayload)
+	json.Unmarshal(atc, &atClaims)
+	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	at.SignedString([]byte(maker.accessSecret))
 
-	if err != nil {
-		return nil, err
-	}
-	err = os.Setenv("REFRESH_SECRET", "mcmvmkmsdnfsdmfdsjf")
-	if err != nil {
-		return nil, err
-	}
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// err = os.Setenv("REFRESH_SECRET", "mcmvmkmsdnfsdmfdsjf")
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	rtClaims := jwt.MapClaims{}
-	rtClaims["refresh_uuid"] = td.RefreshUUID
-	rtClaims["user_id"] = userID
-	rtClaims["exp"] = td.RtExpires
-	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-	payload.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
-	if err != nil {
-		return nil, err
-	}
-	return td, nil
+	rtc, _ := json.Marshal(payload.refreshTokenPayload)
+	json.Unmarshal(rtc, &rtClaims)
+	// rtClaims["refresh_uuid"] = td.RefreshUUID
+	// rtClaims["user_id"] = userID
+	// rtClaims["exp"] = td.RtExpires
+	// rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
+	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClamis)
+	rt.SignedString([]byte(maker.refreshSecret))
+	// payload.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
+	// if err != nil {
+	// 	return nil, err
+	// }
+	return {
+		access_token: at,
+		refresh_token: rt,
+	}, nil
+	// return td, nil
 }
 
 func (maker *JWTMaker) VerifyToken(payload string) (*Payload, error) {
