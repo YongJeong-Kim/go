@@ -35,34 +35,26 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 	}
 
 	refreshUUID := uuid.NewString()
+	refreshExpiredAt := time.Now().Add(duration.RefreshTokenDuration)
 
 	return &Payload{
-		accessTokenPayload: AccessTokenPayload{
+		AccessTokenPayload: AccessTokenPayload{
 			ID:          atID,
 			Username:    username,
 			IssuedAt:    time.Now(),
 			ExpiredAt:   time.Now().Add(duration.AccessTokenDuration),
 			AccessUUID:  uuid.NewString(),
 			RefreshUUID: refreshUUID,
-			RtExpiredAt: time.Now().Add(duration.RefreshTokenDuration),
+			RtExpiredAt: refreshExpiredAt,
 		},
-		refreshTokenPayload: RefreshTokenPayload{
+		RefreshTokenPayload: RefreshTokenPayload{
 			ID:          rtID,
 			Username:    username,
 			IssuedAt:    time.Now(),
-			ExpiredAt:   time.Now().Add(duration.RefreshTokenDuration),
+			ExpiredAt:   refreshExpiredAt,
 			RefreshUUID: refreshUUID,
 		},
 	}, nil
-	// return &AccessTokenPayload{
-	// 	ID:          atID,
-	// 	Username:    username,
-	// 	IssuedAt:    time.Now(),
-	// 	ExpiredAt:   time.Now().Add(atDur),
-	// 	AccessUUID:  uuid.NewString(),
-	// 	RefreshUUID: uuid.NewString(),
-	// 	RtExpiredAt: time.Now().Add(rtDur),
-	// }, nil
 }
 
 type RefreshTokenPayload struct {
@@ -74,8 +66,13 @@ type RefreshTokenPayload struct {
 }
 
 type Payload struct {
-	accessTokenPayload  AccessTokenPayload
-	refreshTokenPayload RefreshTokenPayload
+	AccessTokenPayload  AccessTokenPayload
+	RefreshTokenPayload RefreshTokenPayload
+}
+
+type PayloadDetails struct {
+	Payload *Payload
+	Token   map[string]string
 }
 
 // type Payload struct {
