@@ -3,86 +3,100 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/golang-jwt/jwt"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
-	"io"
-	"io/ioutil"
+	"gooauth2/api"
+	"gooauth2/config"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt"
 )
 
 var ctx = context.Background()
 
-var (
-	router = gin.Default()
-)
+// var (
+// 	router = gin.Default()
+// )
 
 func main() {
-	router.POST("/login", Login)
-	router.POST("/todo", TokenAuthMiddleware(), CreateTodo)
-	router.POST("/logout", TokenAuthMiddleware(), Logout)
-	router.POST("/token/refresh", Refresh)
-	router.GET("/all", TokenAuthMiddleware(), func(c *gin.Context) {
-		c.JSON(http.StatusOK, "OK")
-	})
-
-	//clientID := os.Getenv("GOOGLE_CLIENT_ID")
-	//clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
-	//redirectURL := os.Getenv("GOOGLE_REDIRECT_URI")
-
-	oauth2Conf := &oauth2.Config{
-		ClientID:     "<CLIENT ID>",
-		ClientSecret: "<CLIENT SECRET>",
-		Endpoint:     google.Endpoint,
-		RedirectURL:  "<CALLBACK URL>",
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			//"https://www.googleapis.com/auth/userinfo.profile",
-		},
+	cfg, err := config.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config.")
 	}
-	router.GET("/auth/google", func(ctx *gin.Context) {
-		url := oauth2Conf.AuthCodeURL("random string")
-		ctx.Redirect(http.StatusTemporaryRedirect, url)
-	})
-	router.GET("/auth/callback", func(ctx *gin.Context) {
-		if ctx.Request.FormValue("state") != "random string" {
-			fmt.Println("state is not valid")
-		}
 
-		token, err := oauth2Conf.Exchange(ctx, ctx.Request.FormValue("code"))
-		if err != nil {
-			fmt.Printf("could not get token: %s\n", err.Error())
-			return
-		}
+	server, err := api.NewServer(cfg)
+	if err != nil {
+		log.Fatal("cannot create new server.")
+	}
 
-		resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
-		if err != nil {
-			fmt.Printf("could not create get request: %s\n", err.Error())
-			return
-		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				fmt.Printf("Close response error: %s", err.Error())
-				return
-			}
-		}(resp.Body)
-		content, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			fmt.Println("response read error: %s ", err.Error())
-			return
-		}
-		ctx.Data(http.StatusOK, "application/json", content)
-		//fmt.Fprintf(ctx.Writer, "Response: %s", content)
-	})
+	err = server.Start(cfg.ServerAddress)
+	if err != nil {
+		log.Fatal("cannot start server.")
+	}
 
-	log.Fatal(router.Run(":8080"))
+	// router.POST("/login", server.Login)
+	// router.POST("/todo", TokenAuthMiddleware(), CreateTodo)
+	// router.POST("/logout", TokenAuthMiddleware(), Logout)
+	// router.POST("/token/refresh", Refresh)
+	// router.GET("/all", TokenAuthMiddleware(), func(c *gin.Context) {
+	// 	c.JSON(http.StatusOK, "OK")
+	// })
+
+	// //clientID := os.Getenv("GOOGLE_CLIENT_ID")
+	// //clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
+	// //redirectURL := os.Getenv("GOOGLE_REDIRECT_URI")
+
+	// oauth2Conf := &oauth2.Config{
+	// 	ClientID:     "<CLIENT ID>",
+	// 	ClientSecret: "<CLIENT SECRET>",
+	// 	Endpoint:     google.Endpoint,
+	// 	RedirectURL:  "<CALLBACK URL>",
+	// 	Scopes: []string{
+	// 		"https://www.googleapis.com/auth/userinfo.email",
+	// 		//"https://www.googleapis.com/auth/userinfo.profile",
+	// 	},
+	// }
+	// router.GET("/auth/google", func(ctx *gin.Context) {
+	// 	url := oauth2Conf.AuthCodeURL("random string")
+	// 	ctx.Redirect(http.StatusTemporaryRedirect, url)
+	// })
+	// router.GET("/auth/callback", func(ctx *gin.Context) {
+	// 	if ctx.Request.FormValue("state") != "random string" {
+	// 		fmt.Println("state is not valid")
+	// 	}
+
+	// 	token, err := oauth2Conf.Exchange(ctx, ctx.Request.FormValue("code"))
+	// 	if err != nil {
+	// 		fmt.Printf("could not get token: %s\n", err.Error())
+	// 		return
+	// 	}
+
+	// 	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	// 	if err != nil {
+	// 		fmt.Printf("could not create get request: %s\n", err.Error())
+	// 		return
+	// 	}
+	// 	defer func(Body io.ReadCloser) {
+	// 		err := Body.Close()
+	// 		if err != nil {
+	// 			fmt.Printf("Close response error: %s", err.Error())
+	// 			return
+	// 		}
+	// 	}(resp.Body)
+	// 	content, err := ioutil.ReadAll(resp.Body)
+	// 	if err != nil {
+	// 		fmt.Println("response read error: %s ", err.Error())
+	// 		return
+	// 	}
+	// 	ctx.Data(http.StatusOK, "application/json", content)
+	// 	//fmt.Fprintf(ctx.Writer, "Response: %s", content)
+	// })
+
+	// log.Fatal(router.Run(":8080"))
 }
 
 type User struct {
