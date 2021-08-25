@@ -15,7 +15,7 @@ type User struct {
 	Username string `json:"username"`
 }
 
-func (server *Server) login(c *gin.Context) {
+func (server *Server) Login(c *gin.Context) {
 	var u User
 	if err := c.ShouldBindJSON(&u); err != nil {
 		c.JSON(http.StatusUnprocessableEntity, "Invalid JSON provided.")
@@ -37,26 +37,35 @@ func (server *Server) login(c *gin.Context) {
 		RefreshTokenDuration: server.config.RefreshTokenDuration,
 	}
 
-	token, err := server.token.CreateToken(u.Username, tokenDuration)
+	tokenDetails, err := server.token.CreateToken(u.Username, tokenDuration)
 	if err != nil {
 		c.JSON(http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, token)
+	err = server.CreateAuth(u.ID, tokenDetails)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, tokenDetails.Token)
 }
 
-func (server *Server) CreateAuth(userID int64, payload *token.AccessTokenPayload) error {
-	at := payload.ExpiredAt
-	rt := payload.RtExpiredAt
+func (server *Server) CreateAuth(userID int64, details *token.PayloadDetails) error {
+	at := details.Payload.AccessTokenPayload.ExpiredAt
+	rt := details.Payload.RefreshTokenPayload.ExpiredAt
 	now := time.Now()
 
-	errAccess := server.redisClient.Set(context.Background(), payload.AccessUUID, strconv.Itoa(int(userID)), at.Sub(now)).Err()
+	accessUUID := details.Payload.AccessTokenPayload.AccessUUID
+	refreshUUID := details.Payload.RefreshTokenPayload.RefreshUUID
+
+	errAccess := server.redisClient.Set(context.Background(), accessUUID, strconv.Itoa(int(userID)), at.Sub(now)).Err()
 	if errAccess != nil {
 		return errAccess
 	}
 
-	errRefresh := server.redisClient.Set(context.Background(), payload.RefreshUUID, strconv.Itoa(int(userID)), rt.Sub(now)).Err()
+	errRefresh := server.redisClient.Set(context.Background(), refreshUUID, strconv.Itoa(int(userID)), rt.Sub(now)).Err()
 	if errRefresh != nil {
 		return errRefresh
 	}
