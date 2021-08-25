@@ -1,11 +1,13 @@
 package config
 
 import (
-	"github.com/spf13/viper"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 type App struct {
+	ServerAddress        string        `mapstructure:"SERVER_ADDRESS"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	AccessSecret         string        `mapstructure:"ACCESS_SECRET"`
@@ -13,7 +15,7 @@ type App struct {
 	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 }
 
-func LoadConfig(path string) (config App, err error) {
+func LoadConfig(path string) (appConfig App, err error) {
 	viper.AddConfigPath(path)
 	viper.SetConfigName("app")
 	viper.SetConfigType("env")
@@ -24,6 +26,6 @@ func LoadConfig(path string) (config App, err error) {
 		return
 	}
 
-	err = viper.Unmarshal(&config)
+	err = viper.Unmarshal(&appConfig)
 	return
 }
