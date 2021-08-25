@@ -3,8 +3,9 @@ package token
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 )
 
 type JWTMaker struct {
@@ -17,41 +18,50 @@ type JWTDuration struct {
 	RefreshTokenDuration time.Duration
 }
 
-func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (map[string]string, error) {
+func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*PayloadDetails, error) {
 	payload, err := NewPayload(username, duration)
 	if err != nil {
 		return nil, fmt.Errorf("invalid payload : %s ", err.Error())
 	}
 
 	atClaims := jwt.MapClaims{}
-	atc, _ := json.Marshal(payload.accessTokenPayload)
+	atc, err := json.Marshal(payload.AccessTokenPayload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed. access token : %s ", err.Error())
+	}
 	err = json.Unmarshal(atc, &atClaims)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot unmarshal access token claims : %s ", err.Error())
+		return nil, fmt.Errorf("cannot unmarshal access token claims : %s ", err.Error())
 	}
 
 	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 	accessToken, err := at.SignedString([]byte(maker.accessSecret))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot signed string access token: %s ", err.Error())
+		return nil, fmt.Errorf("cannot signed string access token: %s ", err.Error())
 	}
 
 	rtClaims := jwt.MapClaims{}
-	rtc, _ := json.Marshal(payload.refreshTokenPayload)
+	rtc, err := json.Marshal(payload.RefreshTokenPayload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed. refresh token : %s ", err.Error())
+	}
 	err = json.Unmarshal(rtc, &rtClaims)
 	if err != nil {
-		return nil, fmt.Errorf("Cannot unmarshal refresh token claims : %s ", err.Error())
+		return nil, fmt.Errorf("cannot unmarshal refresh token claims : %s ", err.Error())
 	}
 
 	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
 	refreshToken, err := rt.SignedString([]byte(maker.refreshSecret))
 	if err != nil {
-		return nil, fmt.Errorf("Cannot signed string refresh token: %s ", err.Error())
+		return nil, fmt.Errorf("cannot signed string refresh token: %s ", err.Error())
 	}
 
-	return map[string]string{
-		"access_token":  accessToken,
-		"refresh_token": refreshToken,
+	return &PayloadDetails{
+		Payload: payload,
+		Token: map[string]string{
+			"access_token":  accessToken,
+			"refresh_token": refreshToken,
+		},
 	}, nil
 }
 
@@ -62,7 +72,7 @@ func (maker *JWTMaker) VerifyToken(payload string) (*Payload, error) {
 const minSecretKeySize = 32
 
 func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
-	if len(accessSecret) < minSecretKeySize {
+	if len(accessSecret) < minSecretKeySize && len(refreshSecret) < minSecretKeySize {
 		return nil, fmt.Errorf("must be at least %d characters", minSecretKeySize)
 	}
 	return &JWTMaker{
