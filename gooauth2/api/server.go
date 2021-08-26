@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gooauth2/config"
 	"gooauth2/token"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
@@ -42,7 +43,20 @@ func (server *Server) setupRouter() {
 	router := gin.Default()
 
 	router.POST("/login", server.Login)
+	// router.POST("/token/refresh", "")
+	router.GET("/test", func(c *gin.Context) {
+		c.SetCookie("aaa", "vxcv", 60*60*24, "/test", "/", true, true)
+		c.JSON(http.StatusOK, gin.H{
+			"zz": "cvv",
+		})
+	})
 
+	authRoutes := router.Group("/auth").Use(authMiddleware(server.token))
+	authRoutes.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"aa": "vcx",
+		})
+	})
 	server.router = router
 }
 

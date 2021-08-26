@@ -2,6 +2,7 @@ package token
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -65,8 +66,35 @@ func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*Payl
 	}, nil
 }
 
-func (maker *JWTMaker) VerifyToken(payload string) (*Payload, error) {
-	panic("implement me")
+func (maker *JWTMaker) VerifyToken(accessToken string) (*AccessTokenPayload, error) {
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			return nil, fmt.Errorf("invalid token. ")
+		}
+		return []byte(maker.accessSecret), nil
+	}
+
+	jwtToken, err := jwt.ParseWithClaims(accessToken, jwt.MapClaims{}, keyFunc)
+	if err != nil {
+		verr, ok := err.(*jwt.ValidationError)
+		if ok && errors.Is(verr.Inner, errors.New("token has expired")) {
+			return nil, errors.New("token has expired")
+		}
+		return nil, errors.New("token has expired")
+	}
+
+	claims, err := json.Marshal(jwtToken.Claims)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed. claims : %s ", err.Error())
+	}
+	atp := AccessTokenPayload{}
+	err = json.Unmarshal(claims, &atp)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal verify token claims : %s ", err.Error())
+	}
+
+	return &atp, nil
 }
 
 const minSecretKeySize = 32
