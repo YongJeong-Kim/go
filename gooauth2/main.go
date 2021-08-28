@@ -23,7 +23,6 @@ var ctx = context.Background()
 // )
 
 func main() {
-	//////
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config.")
