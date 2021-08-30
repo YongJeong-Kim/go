@@ -53,17 +53,17 @@ func (server *Server) Login(c *gin.Context) {
 }
 
 func (server *Server) Logout(c *gin.Context) {
-	authorizationHeader := c.GetHeader("authorization")
+	// authorizationHeader := c.GetHeader("authorization")
 
-	ctx := context.Background()
-	result, err := server.redisClient.Del(ctx, accessTokenID).Result()
-	if err != nil {
+	// ctx := context.Background()
+	// result, err := server.redisClient.Del(ctx, accessTokenID).Result()
+	// if err != nil {
 
-	}
+	// }
 
-	server.token.ExtractToken(a)
+	// server.token.ExtractToken(a)
 
-	c.Header("authorization")
+	// c.Header("authorization")
 
 	// server.
 }

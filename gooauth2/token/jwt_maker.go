@@ -20,11 +20,6 @@ type JWTDuration struct {
 	RefreshTokenDuration time.Duration
 }
 
-const (
-	authorizationHeaderKey  = "authorization"
-	authorizationTypeBearer = "bearer"
-)
-
 func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*PayloadDetails, error) {
 	payload, err := NewPayload(username, duration)
 	if err != nil {
@@ -75,21 +70,18 @@ func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*Payl
 func (maker *JWTMaker) ExtractToken(authorizationHeader string) (string, error) {
 	if len(authorizationHeader) == 0 {
 		err := errors.New("authorization header is not provided")
-		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 		return "", err
 	}
 
 	fields := strings.Fields(authorizationHeader)
 	if len(fields) < 2 {
 		err := errors.New("invalid authorization header format")
-		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 		return "", err
 	}
 
 	authorizationType := strings.ToLower(fields[0])
-	if authorizationType != authorizationTypeBearer {
+	if authorizationType != "bearer" {
 		err := fmt.Errorf("unsupported authorization type %s", authorizationType)
-		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 		return "", err
 	}
 
