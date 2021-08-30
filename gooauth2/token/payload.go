@@ -9,18 +9,15 @@ import (
 )
 
 var (
-	ErrInvalidToken = errors.New("token is invalid.")
-	ErrExpiredToken = errors.New("token has expired.")
+	ErrInvalidToken = errors.New("token is invalid")
+	ErrExpiredToken = errors.New("token has expired")
 )
 
 type AccessTokenPayload struct {
-	ID          uuid.UUID `json:"id"`
-	Username    string    `json:"username"`
-	IssuedAt    time.Time `json:"issued_at"`
-	ExpiredAt   time.Time `json:"expired_at"`
-	AccessUUID  string    `json:"access_uuid"`
-	RefreshUUID string    `json:"refresh_uuid"`
-	RtExpiredAt time.Time `json:"rt_expired_at"`
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	IssuedAt  time.Time `json:"issued_at"`
+	ExpiredAt time.Time `json:"expired_at"`
 }
 
 func NewPayload(username string, duration JWTDuration) (*Payload, error) {
@@ -34,35 +31,29 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 		return nil, fmt.Errorf("generate refresh token id failed. %s ", err.Error())
 	}
 
-	refreshUUID := uuid.NewString()
-	refreshExpiredAt := time.Now().Add(duration.RefreshTokenDuration)
+	now := time.Now()
 
 	return &Payload{
 		AccessTokenPayload: AccessTokenPayload{
-			ID:          atID,
-			Username:    username,
-			IssuedAt:    time.Now(),
-			ExpiredAt:   time.Now().Add(duration.AccessTokenDuration),
-			AccessUUID:  uuid.NewString(),
-			RefreshUUID: refreshUUID,
-			RtExpiredAt: refreshExpiredAt,
+			ID:        atID,
+			Username:  username,
+			IssuedAt:  now,
+			ExpiredAt: now.Add(duration.AccessTokenDuration),
 		},
 		RefreshTokenPayload: RefreshTokenPayload{
-			ID:          rtID,
-			Username:    username,
-			IssuedAt:    time.Now(),
-			ExpiredAt:   refreshExpiredAt,
-			RefreshUUID: refreshUUID,
+			ID:        rtID,
+			Username:  username,
+			IssuedAt:  now,
+			ExpiredAt: now.Add(duration.RefreshTokenDuration),
 		},
 	}, nil
 }
 
 type RefreshTokenPayload struct {
-	ID          uuid.UUID `json:"id"`
-	Username    string    `json:"username"`
-	IssuedAt    time.Time `json:"issued_at"`
-	ExpiredAt   time.Time `json:"expired_at"`
-	RefreshUUID string    `json:"refresh_uuid"`
+	ID        uuid.UUID `json:"id"`
+	Username  string    `json:"username"`
+	IssuedAt  time.Time `json:"issued_at"`
+	ExpiredAt time.Time `json:"expired_at"`
 }
 
 type Payload struct {

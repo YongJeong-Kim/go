@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -18,6 +19,11 @@ type JWTDuration struct {
 	AccessTokenDuration  time.Duration
 	RefreshTokenDuration time.Duration
 }
+
+const (
+	authorizationHeaderKey  = "authorization"
+	authorizationTypeBearer = "bearer"
+)
 
 func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*PayloadDetails, error) {
 	payload, err := NewPayload(username, duration)
@@ -66,6 +72,31 @@ func (maker *JWTMaker) CreateToken(username string, duration JWTDuration) (*Payl
 	}, nil
 }
 
+func (maker *JWTMaker) ExtractToken(authorizationHeader string) (string, error) {
+	if len(authorizationHeader) == 0 {
+		err := errors.New("authorization header is not provided")
+		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+		return "", err
+	}
+
+	fields := strings.Fields(authorizationHeader)
+	if len(fields) < 2 {
+		err := errors.New("invalid authorization header format")
+		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+		return "", err
+	}
+
+	authorizationType := strings.ToLower(fields[0])
+	if authorizationType != authorizationTypeBearer {
+		err := fmt.Errorf("unsupported authorization type %s", authorizationType)
+		// ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
+		return "", err
+	}
+
+	accessToken := fields[1]
+	return accessToken, nil
+}
+
 func (maker *JWTMaker) VerifyToken(accessToken string) (*AccessTokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
@@ -81,7 +112,7 @@ func (maker *JWTMaker) VerifyToken(accessToken string) (*AccessTokenPayload, err
 		if ok && errors.Is(verr.Inner, errors.New("token has expired")) {
 			return nil, errors.New("token has expired")
 		}
-		return nil, errors.New("token has expired")
+		return nil, errors.New("invalid token")
 	}
 
 	claims, err := json.Marshal(jwtToken.Claims)
@@ -107,6 +138,10 @@ func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
 		accessSecret,
 		refreshSecret,
 	}, nil
+}
+
+func RefreshToken() {
+
 }
 
 /*type TokenDetails struct {

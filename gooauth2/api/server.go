@@ -51,7 +51,7 @@ func (server *Server) setupRouter() {
 		})
 	})
 
-	authRoutes := router.Group("/auth").Use(authMiddleware(server.token))
+	authRoutes := router.Group("/auth").Use(server.authMiddleware(server.token))
 	authRoutes.GET("/test", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"aa": "vcx",

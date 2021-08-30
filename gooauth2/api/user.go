@@ -52,20 +52,37 @@ func (server *Server) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, tokenDetails.Token)
 }
 
+func (server *Server) Logout(c *gin.Context) {
+	authorizationHeader := c.GetHeader("authorization")
+
+	ctx := context.Background()
+	result, err := server.redisClient.Del(ctx, accessTokenID).Result()
+	if err != nil {
+
+	}
+
+	server.token.ExtractToken(a)
+
+	c.Header("authorization")
+
+	// server.
+}
+
 func (server *Server) CreateAuth(userID int64, details *token.PayloadDetails) error {
+	ctx := context.Background()
 	at := details.Payload.AccessTokenPayload.ExpiredAt
 	rt := details.Payload.RefreshTokenPayload.ExpiredAt
 	now := time.Now()
 
-	accessUUID := details.Payload.AccessTokenPayload.AccessUUID
-	refreshUUID := details.Payload.RefreshTokenPayload.RefreshUUID
+	accessUUID := details.Payload.AccessTokenPayload.ID.String()
+	refreshUUID := details.Payload.RefreshTokenPayload.ID.String()
 
-	errAccess := server.redisClient.Set(context.Background(), accessUUID, strconv.Itoa(int(userID)), at.Sub(now)).Err()
+	errAccess := server.redisClient.Set(ctx, accessUUID, strconv.Itoa(int(userID)), at.Sub(now)).Err()
 	if errAccess != nil {
 		return errAccess
 	}
 
-	errRefresh := server.redisClient.Set(context.Background(), refreshUUID, strconv.Itoa(int(userID)), rt.Sub(now)).Err()
+	errRefresh := server.redisClient.Set(ctx, refreshUUID, strconv.Itoa(int(userID)), rt.Sub(now)).Err()
 	if errRefresh != nil {
 		return errRefresh
 	}
