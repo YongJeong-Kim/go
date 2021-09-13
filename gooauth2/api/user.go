@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"gooauth2/token"
 	"net/http"
 	"strconv"
@@ -53,19 +54,21 @@ func (server *Server) Login(c *gin.Context) {
 }
 
 func (server *Server) Logout(c *gin.Context) {
-	// authorizationHeader := c.GetHeader("authorization")
+	authorizationHeader := c.GetHeader("authorization")
 
-	// ctx := context.Background()
-	// result, err := server.redisClient.Del(ctx, accessTokenID).Result()
-	// if err != nil {
+	accessToken, err := server.token.VerifyToken(authorizationHeader)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+	}
 
-	// }
+	ctx := context.Background()
+	deleted, err := server.redisClient.Del(ctx, accessToken.ID.String()).Result()
+	if err != nil || deleted == 0 {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
 
-	// server.token.ExtractToken(a)
-
-	// c.Header("authorization")
-
-	// server.
+	c.Status(http.StatusOK)
 }
 
 func (server *Server) CreateAuth(userID int64, details *token.PayloadDetails) error {
@@ -86,5 +89,24 @@ func (server *Server) CreateAuth(userID int64, details *token.PayloadDetails) er
 	if errRefresh != nil {
 		return errRefresh
 	}
+	return nil
+}
+
+func (server *Server) DeleteAuth(details *token.PayloadDetails) error {
+	ctx := context.Background()
+
+	at := details.Payload.AccessTokenPayload.ID.String()
+	rt := details.Payload.RefreshTokenPayload.ID.String()
+
+	deleted, err := server.redisClient.Del(ctx, at).Result()
+	if err != nil || deleted == 0 {
+		return fmt.Errorf("logout failed. delete access token failed")
+	}
+
+	deleted, err = server.redisClient.Del(ctx, rt).Result()
+	if err != nil || deleted == 0 {
+		return fmt.Errorf("logout failed. delete refresh token failed")
+	}
+
 	return nil
 }
