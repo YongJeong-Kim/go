@@ -56,13 +56,20 @@ func (server *Server) Login(c *gin.Context) {
 func (server *Server) Logout(c *gin.Context) {
 	authorizationHeader := c.GetHeader("authorization")
 
-	accessToken, err := server.token.VerifyToken(authorizationHeader)
+	accessToken, err := server.token.ExtractToken(authorizationHeader)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	accessTokenPayload, err := server.token.VerifyToken(accessToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, err.Error())
+		return
 	}
 
 	ctx := context.Background()
-	deleted, err := server.redisClient.Del(ctx, accessToken.ID.String()).Result()
+	deleted, err := server.redisClient.Del(ctx, accessTokenPayload.ID.String()).Result()
 	if err != nil || deleted == 0 {
 		c.JSON(http.StatusUnauthorized, err.Error())
 		return

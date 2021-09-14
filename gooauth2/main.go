@@ -50,24 +50,26 @@ func main() {
 	// //clientSecret := os.Getenv("GOOGLE_CLIENT_SECRET")
 	// //redirectURL := os.Getenv("GOOGLE_REDIRECT_URI")
 
-	// oauth2Conf := &oauth2.Config{
-	// 	ClientID:     "<CLIENT ID>",
-	// 	ClientSecret: "<CLIENT SECRET>",
-	// 	Endpoint:     google.Endpoint,
-	// 	RedirectURL:  "<CALLBACK URL>",
-	// 	Scopes: []string{
-	// 		"https://www.googleapis.com/auth/userinfo.email",
-	// 		//"https://www.googleapis.com/auth/userinfo.profile",
-	// 	},
-	// }
-	// router.GET("/auth/google", func(ctx *gin.Context) {
-	// 	url := oauth2Conf.AuthCodeURL("random string")
-	// 	ctx.Redirect(http.StatusTemporaryRedirect, url)
-	// })
-	// router.GET("/auth/callback", func(ctx *gin.Context) {
-	// 	if ctx.Request.FormValue("state") != "random string" {
-	// 		fmt.Println("state is not valid")
-	// 	}
+	//oauth2Conf := &oauth2.Config{
+	//	ClientID:     "118399467217-95tjbmk6ajgha7ht81a85b8flsk9t51t.apps.googleusercontent.com",
+	//	ClientSecret: "7m3BeywuGYMJAEmM1EHJh2Dp",
+	//	Endpoint:     google.Endpoint,
+	//	RedirectURL:  "http://localhost:8080/auth/callback",
+	//	Scopes: []string{
+	//		"https://www.googleapis.com/auth/userinfo.email",
+	//		//"https://www.googleapis.com/auth/userinfo.profile",
+	//	},
+	//}
+	//
+	//fmt.Println(oauth2Conf)
+	//router.GET("/auth/google", func(ctx *gin.Context) {
+	//	url := oauth2Conf.AuthCodeURL("random string")
+	//	ctx.Redirect(http.StatusTemporaryRedirect, url)
+	//})
+	//router.GET("/auth/callback", func(ctx *gin.Context) {
+	//	if ctx.Request.FormValue("state") != "random string" {
+	//		fmt.Println("state is not valid")
+	//	}
 
 	// 	token, err := oauth2Conf.Exchange(ctx, ctx.Request.FormValue("code"))
 	// 	if err != nil {
