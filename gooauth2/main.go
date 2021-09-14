@@ -51,8 +51,8 @@ func main() {
 	// //redirectURL := os.Getenv("GOOGLE_REDIRECT_URI")
 
 	//oauth2Conf := &oauth2.Config{
-	//	ClientID:     "118399467217-95tjbmk6ajgha7ht81a85b8flsk9t51t.apps.googleusercontent.com",
-	//	ClientSecret: "7m3BeywuGYMJAEmM1EHJh2Dp",
+	//	ClientID:     "<CLIENT_ID>",
+	//	ClientSecret: "<CLIENT_SECRET>",
 	//	Endpoint:     google.Endpoint,
 	//	RedirectURL:  "http://localhost:8080/auth/callback",
 	//	Scopes: []string{
