@@ -15,6 +15,7 @@ var (
 
 type AccessTokenPayload struct {
 	ID        uuid.UUID `json:"id"`
+	UserID    string    `json:"user_id"`
 	Username  string    `json:"username"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`
@@ -36,12 +37,14 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 	return &Payload{
 		AccessTokenPayload: AccessTokenPayload{
 			ID:        atID,
+			UserID:    uuid.NewString(),
 			Username:  username,
 			IssuedAt:  now,
 			ExpiredAt: now.Add(duration.AccessTokenDuration),
 		},
 		RefreshTokenPayload: RefreshTokenPayload{
 			ID:        rtID,
+			UserID:    uuid.NewString(),
 			Username:  username,
 			IssuedAt:  now,
 			ExpiredAt: now.Add(duration.RefreshTokenDuration),
@@ -51,6 +54,7 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 
 type RefreshTokenPayload struct {
 	ID        uuid.UUID `json:"id"`
+	UserID    string    `json:"user_id"`
 	Username  string    `json:"username"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`

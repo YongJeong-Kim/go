@@ -89,7 +89,7 @@ func (maker *JWTMaker) ExtractToken(authorizationHeader string) (string, error) 
 	return accessToken, nil
 }
 
-func (maker *JWTMaker) VerifyToken(accessToken string) (*AccessTokenPayload, error) {
+func (maker *JWTMaker) VerifyAccessToken(accessToken string) (*AccessTokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -120,6 +120,37 @@ func (maker *JWTMaker) VerifyToken(accessToken string) (*AccessTokenPayload, err
 	return &atp, nil
 }
 
+func (maker *JWTMaker) VerifyRefreshToken(refreshToken string) (*RefreshTokenPayload, error) {
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			return nil, fmt.Errorf("invalid token. ")
+		}
+		return []byte(maker.refreshSecret), nil
+	}
+
+	jwtToken, err := jwt.ParseWithClaims(refreshToken, jwt.MapClaims{}, keyFunc)
+	if err != nil {
+		verr, ok := err.(*jwt.ValidationError)
+		if ok && errors.Is(verr.Inner, errors.New("token has expired")) {
+			return nil, errors.New("token has expired")
+		}
+		return nil, errors.New("invalid token")
+	}
+
+	claims, err := json.Marshal(jwtToken.Claims)
+	if err != nil {
+		return nil, fmt.Errorf("marshal failed. claims : %s ", err.Error())
+	}
+	rtp := RefreshTokenPayload{}
+	err = json.Unmarshal(claims, &rtp)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal verify token claims : %s ", err.Error())
+	}
+
+	return &rtp, nil
+}
+
 const minSecretKeySize = 32
 
 func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
@@ -130,10 +161,6 @@ func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
 		accessSecret,
 		refreshSecret,
 	}, nil
-}
-
-func RefreshToken() {
-
 }
 
 /*type TokenDetails struct {

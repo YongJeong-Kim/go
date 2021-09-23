@@ -2,12 +2,10 @@ package api
 
 import (
 	"context"
-	"gooauth2/token"
-	"net/http"
-	"strconv"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"gooauth2/token"
+	"net/http"
 )
 
 const (
@@ -40,13 +38,13 @@ func (server *Server) authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		// 	return
 		// }
 
-		accessToken, err := server.token.ExtractToken(authorizationHeader)
+		accessToken, err := server.maker.ExtractToken(authorizationHeader)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
 		}
 
-		payload, err := tokenMaker.VerifyToken(accessToken)
+		payload, err := tokenMaker.VerifyAccessToken(accessToken)
 		if err != nil {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(err))
 			return
@@ -64,16 +62,15 @@ func (server *Server) authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 	}
 }
 
-func (server *Server) fetchAuth(accessToken string) (uint64, error) {
+func (server *Server) fetchAuth(accessToken string) (string, error) {
 	ctx := context.Background()
-	result, err := server.redisClient.Get(ctx, accessToken).Result()
+	userID, err := server.redisClient.Get(ctx, accessToken).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return 0, err
+			return "", err
 		}
-		return 0, err
+		return "", err
 	}
 
-	userID, err := strconv.ParseUint(result, 10, 64)
 	return userID, err
 }
