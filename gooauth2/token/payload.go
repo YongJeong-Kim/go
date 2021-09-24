@@ -13,12 +13,44 @@ var (
 	ErrExpiredToken = errors.New("token has expired")
 )
 
+type Payload struct {
+	AccessTokenPayload  AccessTokenPayload
+	RefreshTokenPayload RefreshTokenPayload
+}
+
+type PayloadDetails struct {
+	Payload *Payload
+	Token   map[string]string
+}
+
 type AccessTokenPayload struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    string    `json:"user_id"`
 	Username  string    `json:"username"`
 	IssuedAt  time.Time `json:"issued_at"`
 	ExpiredAt time.Time `json:"expired_at"`
+}
+
+func (atp AccessTokenPayload) Valid() error {
+	if time.Now().After(atp.ExpiredAt) {
+		return ErrExpiredToken
+	}
+	return nil
+}
+
+type RefreshTokenPayload struct {
+	ID        uuid.UUID `json:"id"`
+	UserID    string    `json:"user_id"`
+	Username  string    `json:"username"`
+	IssuedAt  time.Time `json:"issued_at"`
+	ExpiredAt time.Time `json:"expired_at"`
+}
+
+func (rtp RefreshTokenPayload) Valid() error {
+	if time.Now().After(rtp.ExpiredAt) {
+		return ErrExpiredToken
+	}
+	return nil
 }
 
 func NewPayload(username string, duration JWTDuration) (*Payload, error) {
@@ -51,54 +83,3 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 		},
 	}, nil
 }
-
-type RefreshTokenPayload struct {
-	ID        uuid.UUID `json:"id"`
-	UserID    string    `json:"user_id"`
-	Username  string    `json:"username"`
-	IssuedAt  time.Time `json:"issued_at"`
-	ExpiredAt time.Time `json:"expired_at"`
-}
-
-type Payload struct {
-	AccessTokenPayload  AccessTokenPayload
-	RefreshTokenPayload RefreshTokenPayload
-}
-
-type PayloadDetails struct {
-	Payload *Payload
-	Token   map[string]string
-}
-
-// type Payload struct {
-// 	ID          uuid.UUID `json:"id"`
-// 	Username    string    `json:"username"`
-// 	IssuedAt    time.Time `json:"issued_at"`
-// 	ExpiredAt   time.Time `json:"expired_at"`
-// 	AccessUUID  string    `json:"access_uuid"`
-// 	RefreshUUID string    `json:"refresh_uuid"`
-// }
-
-// func NewPayload(username string, duration time.Duration) (*Payload, error) {
-// 	tokenID, err := uuid.NewRandom()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	payload := &Payload{
-// 		ID:          tokenID,
-// 		Username:    username,
-// 		IssuedAt:    time.Now(),
-// 		ExpiredAt:   time.Now().Add(duration),
-// 		AccessUUID:  uuid.NewString(),
-// 		RefreshUUID: uuid.NewString(),
-// 	}
-// 	return payload, nil
-// }
-
-// func ExpiredValid(payload Payload) error {
-// 	if time.Now().After(payload.ExpiredAt) {
-// 		return ErrExpiredToken
-// 	}
-// 	return nil
-// }

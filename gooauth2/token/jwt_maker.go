@@ -93,62 +93,52 @@ func (maker *JWTMaker) VerifyAccessToken(accessToken string) (*AccessTokenPayloa
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("invalid token. ")
+			return nil, ErrInvalidToken
 		}
 		return []byte(maker.accessSecret), nil
 	}
 
-	jwtToken, err := jwt.ParseWithClaims(accessToken, jwt.MapClaims{}, keyFunc)
+	jwtToken, err := jwt.ParseWithClaims(accessToken, &AccessTokenPayload{}, keyFunc)
 	if err != nil {
 		verr, ok := err.(*jwt.ValidationError)
-		if ok && errors.Is(verr.Inner, errors.New("token has expired")) {
-			return nil, errors.New("token has expired")
+		if ok && errors.Is(verr.Inner, ErrExpiredToken) {
+			return nil, ErrExpiredToken
 		}
-		return nil, errors.New("invalid token")
+		return nil, ErrInvalidToken
 	}
 
-	claims, err := json.Marshal(jwtToken.Claims)
-	if err != nil {
-		return nil, fmt.Errorf("marshal failed. claims : %s ", err.Error())
-	}
-	atp := AccessTokenPayload{}
-	err = json.Unmarshal(claims, &atp)
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal verify token claims : %s ", err.Error())
+	payload, ok := jwtToken.Claims.(*AccessTokenPayload)
+	if !ok {
+		return nil, ErrInvalidToken
 	}
 
-	return &atp, nil
+	return payload, nil
 }
 
 func (maker *JWTMaker) VerifyRefreshToken(refreshToken string) (*RefreshTokenPayload, error) {
 	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
-			return nil, fmt.Errorf("invalid token. ")
+			return nil, ErrInvalidToken
 		}
 		return []byte(maker.refreshSecret), nil
 	}
 
-	jwtToken, err := jwt.ParseWithClaims(refreshToken, jwt.MapClaims{}, keyFunc)
+	jwtToken, err := jwt.ParseWithClaims(refreshToken, &RefreshTokenPayload{}, keyFunc)
 	if err != nil {
 		verr, ok := err.(*jwt.ValidationError)
-		if ok && errors.Is(verr.Inner, errors.New("token has expired")) {
-			return nil, errors.New("token has expired")
+		if ok && errors.Is(verr.Inner, ErrExpiredToken) {
+			return nil, ErrExpiredToken
 		}
-		return nil, errors.New("invalid token")
+		return nil, ErrInvalidToken
 	}
 
-	claims, err := json.Marshal(jwtToken.Claims)
-	if err != nil {
-		return nil, fmt.Errorf("marshal failed. claims : %s ", err.Error())
-	}
-	rtp := RefreshTokenPayload{}
-	err = json.Unmarshal(claims, &rtp)
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal verify token claims : %s ", err.Error())
+	payload, ok := jwtToken.Claims.(*RefreshTokenPayload)
+	if !ok {
+		return nil, ErrInvalidToken
 	}
 
-	return &rtp, nil
+	return payload, nil
 }
 
 const minSecretKeySize = 32
@@ -162,49 +152,3 @@ func NewJWTMaker(accessSecret string, refreshSecret string) (Maker, error) {
 		refreshSecret,
 	}, nil
 }
-
-/*type TokenDetails struct {
-	AccessToken  string
-	RefreshToken string
-	AccessUUID   string
-	RefreshUUID  string
-	AtExpires    int64
-	RtExpires    int64
-}*/
-
-//func CreateToken(userID uint64) (*TokenDetails, error) {
-//	td := &TokenDetails{}
-//	td.AtExpires = time.Now().Add(time.Minute * 15).Unix()
-//	td.AccessUUID = uuid.NewString()
-//	td.RtExpires = time.Now().Add(time.Hour * 24 * 7).Unix()
-//	td.RefreshUUID = uuid.NewString()
-//
-//	var err error
-//
-//	os.Setenv("ACCESS_SECRET", "jdnfksdmfksd")
-//	atClaims := jwt.MapClaims{}
-//	atClaims["authorized"] = true
-//	atClaims["access_uuid"] = td.AccessUUID
-//	atClaims["user_id"] = userID
-//	atClaims["exp"] = td.AtExpires
-//	at := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-//	td.AccessToken, err = at.SignedString([]byte(os.Getenv("ACCESS_SECRET")))
-//	if err != nil {
-//		return nil, err
-//	}
-//	err = os.Setenv("REFRESH_SECRET", "mcmvmkmsdnfsdmfdsjf")
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	rtClaims := jwt.MapClaims{}
-//	rtClaims["refresh_uuid"] = td.RefreshUUID
-//	rtClaims["user_id"] = userID
-//	rtClaims["exp"] = td.RtExpires
-//	rt := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
-//	td.RefreshToken, err = rt.SignedString([]byte(os.Getenv("REFRESH_SECRET")))
-//	if err != nil {
-//		return nil, err
-//	}
-//	return td, nil
-//}
