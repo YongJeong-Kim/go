@@ -19,7 +19,7 @@ jobs:
           --health-retries 5
         ports:
           - 16379:6379
-        command: >
+        command: >-
           --requirepass "1234"
 
 
