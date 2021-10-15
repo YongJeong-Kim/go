@@ -73,7 +73,7 @@ func (server *Server) oauth2CallbackNaver(c *gin.Context) {
 	}(resp.Body)
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("response read error: %s ", err.Error())
+		fmt.Printf("response read error: %s ", err.Error())
 		return
 	}
 	c.Data(http.StatusOK, "application/json", content)
@@ -123,7 +123,7 @@ func (server *Server) oauth2CallbackGoogle(c *gin.Context) {
 	}(resp.Body)
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("response read error: %s ", err.Error())
+		fmt.Printf("response read error: %s ", err.Error())
 		return
 	}
 	c.Data(http.StatusOK, "application/json", content)
@@ -182,7 +182,7 @@ func (server *Server) oauth2CallbackKakao(c *gin.Context) {
 	}(resp.Body)
 	content, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("response read error: %s ", err.Error())
+		fmt.Printf("response read error: %s ", err.Error())
 		return
 	}
 	c.Data(http.StatusOK, "application/json", content)

@@ -64,19 +64,20 @@ func NewPayload(username string, duration JWTDuration) (*Payload, error) {
 		return nil, fmt.Errorf("generate refresh token id failed. %s ", err.Error())
 	}
 
+	userID := uuid.NewString()
 	now := time.Now()
 
 	return &Payload{
 		AccessTokenPayload: AccessTokenPayload{
 			ID:        atID,
-			UserID:    uuid.NewString(),
+			UserID:    userID,
 			Username:  username,
 			IssuedAt:  now,
 			ExpiredAt: now.Add(duration.AccessTokenDuration),
 		},
 		RefreshTokenPayload: RefreshTokenPayload{
 			ID:        rtID,
-			UserID:    uuid.NewString(),
+			UserID:    userID,
 			Username:  username,
 			IssuedAt:  now,
 			ExpiredAt: now.Add(duration.RefreshTokenDuration),
