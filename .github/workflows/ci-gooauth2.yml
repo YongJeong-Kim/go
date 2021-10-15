@@ -1,4 +1,4 @@
-name: ci goauth2
+name: ci gooauth2
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  runner-job:
+  test:
     runs-on: ubuntu-latest
     services:
       redis:
@@ -19,6 +19,9 @@ jobs:
           --health-retries 5
         ports:
           - 16379:6379
+        command: >
+          --requirepass "1234"
+
 
     steps:
       - uses: actions/checkout@v2
