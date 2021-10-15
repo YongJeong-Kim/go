@@ -1,0 +1,39 @@
+name: ci goauth2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 16379:6379
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: getong/redis-action@v1
+        with:
+          host port: 16379 # Optional, default value is 6379. The port of host
+          container port: 6379 # Optional, default value is 6379. The port of container
+          redis password: '1234' # Optional, default is empty
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Test
+        working-directory: ./gooauth2
+        run: make test
