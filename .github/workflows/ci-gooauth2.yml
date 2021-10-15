@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  runner-job:
     runs-on: ubuntu-latest
     services:
       redis:
