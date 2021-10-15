@@ -17,8 +17,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        command: >-
-          redis-server --requirepass 1234
         ports:
           - 16379:6379
 
@@ -33,3 +31,6 @@ jobs:
       - name: Test
         working-directory: ./gooauth2
         run: make test
+
+        env:
+          REDIS_PASSWORD: 1234
