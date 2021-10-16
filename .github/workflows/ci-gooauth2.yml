@@ -17,12 +17,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        command: redis-server --requirepass "1234"
+#        env:
+#          REDIS_PASSWORD: 1234
         ports:
           - 16379:6379
 
     steps:
       - uses: actions/checkout@v2
+
+      - uses: getong/redis-action@v1
+        with:
+          host port: 16379 # Optional, default value is 6379. The port of host
+          container port: 6379 # Optional, default value is 6379. The port of container
+          redis password: '1234' # Optional, default is empty
 
       - name: Set up Go
         uses: actions/setup-go@v2
