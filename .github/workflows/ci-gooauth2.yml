@@ -27,7 +27,7 @@ jobs:
 
       - uses: getong/redis-action@v1
         with:
-          redis password: '1234' # Optional, default is empty
+          redis password: '1234'
 
       - name: Set up Go
         uses: actions/setup-go@v2
