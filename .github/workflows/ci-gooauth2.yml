@@ -17,17 +17,12 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-#        env:
-#          REDIS_PASSWORD: 1234
+          --entrypoint redis-server --requirepass "1234"
         ports:
           - 16379:6379
 
     steps:
       - uses: actions/checkout@v2
-
-      - uses: getong/redis-action@v1
-        with:
-          redis password: '1234'
 
       - name: Set up Go
         uses: actions/setup-go@v2
