@@ -9,30 +9,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        redis-version: [ 6 ]
 
-#    services:
-#      redis:
-#        image: redis
-#        options: >-
-#          --health-cmd "redis-cli ping"
-#          --health-interval 10s
-#          --health-timeout 5s
-#          --health-retries 5
-#          redis-server --requirepass "1234"
-#        ports:
-#          - 16379:6379
+    services:
+      redis:
+        image: redisss
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 16379:6379
 
     steps:
       - uses: actions/checkout@v2
-
-      - name: Start Redis
-        uses: supercharge/redis-github-action@1.2.0
-        with:
-          redis-version: ${{ matrix.redis-version }}
-          redis-password: 1234
 
       - name: Set up Go
         uses: actions/setup-go@v2
