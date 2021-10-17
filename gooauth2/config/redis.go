@@ -8,9 +8,9 @@ import (
 
 func ConnectRedis() (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:16379",
-		Password: "1234",
-		DB:       0,
+		Addr: "localhost:16379",
+		//Password: "1234",
+		DB: 0,
 	})
 
 	_, err := client.Ping(context.Background()).Result()
