@@ -24,6 +24,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: getong/redis-action@v1
+        with:
+          host port: 16379 # Optional, default value is 6379. The port of host
+          container port: 6379 # Optional, default value is 6379. The port of container
+          redis password: '' # Optional, default is empty
+
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
