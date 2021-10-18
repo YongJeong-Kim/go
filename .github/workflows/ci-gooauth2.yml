@@ -12,11 +12,11 @@ jobs:
 
     services:
       redis:
-        image: 'bitnami/redis:latest'
-        environment:
-          - REDIS_PASSWORD: 1234
+        image: ubuntu/redis
+        options: >-
+          -e REDIS_PASSWORD=1234
         ports:
-          - '16379:6379'
+          - 16379:6379
 #        image: redis
 #        options: >-
 #          --health-cmd "redis-cli ping"
