@@ -165,7 +165,7 @@ func (server *Server) oauth2Callback(c *gin.Context) {
 	}
 
 	code := c.Request.FormValue("code")
-	token, err := authInfo.OAuth2Config.Exchange(c, code)
+	oauth2Token, err := authInfo.OAuth2Config.Exchange(c, code)
 	if err != nil {
 		log.Panic(authInfo.errs.exchangeFailed, err.Error())
 		return
@@ -174,13 +174,13 @@ func (server *Server) oauth2Callback(c *gin.Context) {
 	var reqURL string
 	switch authInfo.platform {
 	case "google":
-		reqURL = authInfo.url + token.AccessToken
+		reqURL = authInfo.url + oauth2Token.AccessToken
 	case "kakao":
 		reqURL = authInfo.url
-		authInfo.header.Set("Authorization", "Bearer "+token.AccessToken)
+		authInfo.header.Set("Authorization", "Bearer "+oauth2Token.AccessToken)
 	case "naver":
 		reqURL = authInfo.url
-		authInfo.header.Set("Authorization", "Bearer "+token.AccessToken)
+		authInfo.header.Set("Authorization", "Bearer "+oauth2Token.AccessToken)
 	}
 
 	client := http.Client{}
