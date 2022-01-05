@@ -42,14 +42,8 @@ func NewServer(app config.App) (*Server, error) {
 func (server *Server) setupRouter() {
 	router := gin.Default()
 
-	router.GET("/auth/google", server.oauth2LoginGoogle)
-	router.GET("/auth/callback", server.oauth2CallbackGoogle)
-
-	router.GET("/auth/naver", server.oauth2LoginNaver)
-	router.GET("/auth/callback/naver", server.oauth2CallbackNaver)
-
-	router.GET("/auth/kakao", server.oauth2LoginKakao)
-	router.GET("/auth/callback/kakao", server.oauth2CallbackKakao)
+	router.GET("/auth/:platform", server.oauth2Login)
+	router.GET("/auth/callback/:platform", server.oauth2Callback)
 
 	router.POST("/login", server.Login)
 	router.POST("/token/refresh", server.refreshToken)
