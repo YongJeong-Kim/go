@@ -5,10 +5,10 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [ created ]
-    # run manually
-    workflow_dispatch:
+#  release:
+#    types: [ created ]
+##     run manually
+#    workflow_dispatch:
 
 jobs:
   deploy:
