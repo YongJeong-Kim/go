@@ -53,7 +53,7 @@
 
 ![image](https://user-images.githubusercontent.com/30817924/148496060-4ecc313b-145f-4032-9d4d-8cd4ef78b4f9.png)
 - 프라이빗, 퍼블릭 중 선택하고 리포지토리 이름입력 후 생성한다.
+- 리포지토리 이름은 *$ECR_REPOSITORY*에서도 사용한다.
 
-
-
-
+![image](https://user-images.githubusercontent.com/30817924/148498798-e033ce70-0a44-499d-843d-26b55bc4ff9b.png)
+- 소스코드 푸시하면 위와 같이 이미지가 생성된다.
