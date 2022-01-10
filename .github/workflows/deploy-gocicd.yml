@@ -29,9 +29,16 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
 
+    - name: Generate task-definition.json
+      run: |
+        aws ecs register-task-definition \
+        --generate-cli-skeleton > task-definition.json
+
     - name: Download task definition
       run: |
-        aws ecs describe-task-definition --task-definition my-task-definition-family --query taskDefinition > task-definition.json
+        aws ecs describe-task-definition \
+          --task-definition my-task-definition-family \
+          --query taskDefinition > task-definition.json
 
     - name: Build, tag, and push image to Amazon ECR
       working-directory: ./gocicd
@@ -41,7 +48,7 @@ jobs:
         IMAGE_TAG: ${{ github.sha }}
       run: |
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
     - name: Fill in the new image ID in the Amazon ECS task definition
       id: task-def
