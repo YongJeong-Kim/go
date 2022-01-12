@@ -2,13 +2,17 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"golang.org/x/oauth2"
 	"gooauth2/token"
+	"gooauth2/util"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,173 +23,202 @@ type User struct {
 	Username string `json:"username"`
 }
 
-var oauth2ConfNaver = &oauth2.Config{
-	ClientID:     "<NAVER_CLIENT_ID>",
-	ClientSecret: "<NAVER_CLIENT_SECRET>",
-	Endpoint: oauth2.Endpoint{
-		AuthURL:  "https://nid.naver.com/oauth2.0/authorize",
-		TokenURL: "https://nid.naver.com/oauth2.0/token",
-	},
-	RedirectURL: "http://localhost:8080/auth/callback/naver",
+type AuthInfo struct {
+	platform     string
+	OAuth2Config *oauth2.Config
+	url          string
+	header       http.Header
+	errs         authErr
 }
 
-func (server *Server) oauth2LoginNaver(c *gin.Context) {
-	url := oauth2ConfNaver.AuthCodeURL("random string")
-	c.Redirect(http.StatusTemporaryRedirect, url)
+type authErr struct {
+	invalidState            string
+	exchangeFailed          string
+	requestFailed           string
+	responseFailed          string
+	readResponseFailed      string
+	responseBodyCloseFailed string
+	unmarshalFailed         string
 }
 
-func (server *Server) oauth2CallbackNaver(c *gin.Context) {
-	if c.Request.FormValue("state") != "random string" {
-		fmt.Println("state is not valid")
+func getOAuth2Info(platform string) (AuthInfo, error) {
+	authInfo := AuthInfo{}
+
+	errMsg := func(platform string) authErr {
+		return authErr{
+			invalidState:            fmt.Sprintf("%s oauth2 invalid state", platform),
+			exchangeFailed:          fmt.Sprintf("%s oauth2 exchange failed.", platform),
+			requestFailed:           fmt.Sprintf("%s oauth2 request failed.", platform),
+			responseFailed:          fmt.Sprintf("%s oauth2 response failed.", platform),
+			readResponseFailed:      fmt.Sprintf("%s oauth2 read response body failed.", platform),
+			responseBodyCloseFailed: fmt.Sprintf("%s oauth2 response.body close failed.", platform),
+			unmarshalFailed:         fmt.Sprintf("%s oauth2 profile unmarshal failed.", platform),
+		}
 	}
 
-	token, err := oauth2ConfNaver.Exchange(c, c.Request.FormValue("code"))
+	switch platform {
+	case "google":
+		authInfo = AuthInfo{
+			platform: "google",
+			OAuth2Config: &oauth2.Config{
+				ClientID:     "<GOOGLE_CLIENT_ID>",
+				ClientSecret: "<GOOGLE_CLIENT_SECRET>",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+					TokenURL: "https://oauth2.googleapis.com/token",
+				},
+				RedirectURL: "http://localhost:8080/auth/callback/google",
+				Scopes: []string{
+					"https://www.googleapis.com/auth/userinfo.email",
+					//"https://www.googleapis.com/auth/userinfo.profile",
+				},
+			},
+			url:    "https://www.googleapis.com/oauth2/v2/userinfo?access_token=",
+			header: http.Header{},
+			errs:   errMsg(platform),
+		}
+	case "kakao":
+		authInfo = AuthInfo{
+			platform: "kakao",
+			OAuth2Config: &oauth2.Config{
+				ClientID:     "<KAKAO_CLIENT_ID>", // kakao rest api key
+				ClientSecret: "<KAKAO_CLIENT>SECRET>",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://kauth.kakao.com/oauth/authorize",
+					TokenURL: "https://kauth.kakao.com/oauth/token",
+				},
+				RedirectURL: "http://localhost:8080/auth/callback/kakao",
+			},
+			url: "https://kapi.kakao.com/v2/user/me",
+			header: http.Header{
+				"Host":          []string{"kapi.kakao.com"},
+				"Authorization": []string{"Bearer "},
+			},
+			errs: errMsg(platform),
+		}
+	case "naver":
+		authInfo = AuthInfo{
+			platform: "naver",
+			OAuth2Config: &oauth2.Config{
+				ClientID:     "<NAVER_CLIENT_ID>",
+				ClientSecret: "<NAVER_CLIENT_SECRET>",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://nid.naver.com/oauth2.0/authorize",
+					TokenURL: "https://nid.naver.com/oauth2.0/token",
+				},
+				RedirectURL: "http://localhost:8080/auth/callback/naver",
+			},
+			url: "https://openapi.naver.com/v1/nid/me",
+			header: http.Header{
+				"Host":          []string{"localhost:8080"},
+				"Authorization": []string{"Bearer "},
+			},
+			errs: errMsg(platform),
+		}
+	default:
+		authInfo = AuthInfo{}
+	}
+
+	if reflect.ValueOf(authInfo).IsZero() {
+		return authInfo, errors.New("Unsupported Platform Requested\n")
+	}
+
+	return authInfo, nil
+}
+
+func (server *Server) oauth2Login(c *gin.Context) {
+	platform := c.Param("platform")
+	aa := c.Request.URL.String()
+	fmt.Println(aa)
+	fmt.Println(platform)
+	authInfo, err := getOAuth2Info(platform)
 	if err != nil {
-		fmt.Printf("could not get token: %s\n", err.Error())
+		log.Panic(err.Error())
 		return
+	}
+
+	state := util.RandomString(32)
+	err = server.createState(state)
+	if err != nil {
+		log.Panic("create state failed.")
+		return
+	}
+
+	oauth2URL := authInfo.OAuth2Config.AuthCodeURL(state)
+	//oauth2URL := oauth2ConfGoogle.AuthCodeURL(state)
+	c.Redirect(http.StatusTemporaryRedirect, oauth2URL)
+}
+
+func (server *Server) oauth2Callback(c *gin.Context) {
+	platform := c.Param("platform")
+	authInfo, err := getOAuth2Info(platform)
+	if err != nil {
+		log.Panic(err.Error())
+		return
+	}
+
+	state := c.Request.FormValue("state")
+	err = server.getState(state)
+	if err != nil {
+		log.Panic("invalid state.", err.Error())
+		return
+	}
+
+	code := c.Request.FormValue("code")
+	oauth2Token, err := authInfo.OAuth2Config.Exchange(c, code)
+	if err != nil {
+		log.Panic(authInfo.errs.exchangeFailed, err.Error())
+		return
+	}
+
+	var reqURL string
+	switch authInfo.platform {
+	case "google":
+		reqURL = authInfo.url + oauth2Token.AccessToken
+	case "kakao":
+		reqURL = authInfo.url
+		authInfo.header.Set("Authorization", "Bearer "+oauth2Token.AccessToken)
+	case "naver":
+		reqURL = authInfo.url
+		authInfo.header.Set("Authorization", "Bearer "+oauth2Token.AccessToken)
 	}
 
 	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://openapi.naver.com/v1/nid/me", nil)
+	req, err := http.NewRequest("GET", reqURL, nil)
 	if err != nil {
-		log.Fatal("get naver user info failed.")
+		log.Panic("oauth2 request failed. ", err.Error())
 		return
 	}
 
-	req.Header = http.Header{
-		"Host":          []string{"localhost:8080"},
-		"Authorization": []string{"Bearer " + token.AccessToken},
-	}
-
-	//c.Request.Header.Set("Authorization", "Bearer "+token.AccessToken)
-	//resp, err := http.Get("https://openapi.naver.com/v1/nid/me" + token.AccessToken)
+	req.Header = authInfo.header
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Printf("could not create get request: %s\n", err.Error())
+		log.Panic("oauth2 response failed. ", err.Error())
 		return
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
+
+	content, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Panic("read response body failed. ", err.Error())
+		return
+	}
+	defer func(closer io.ReadCloser) {
+		err := closer.Close()
 		if err != nil {
-			fmt.Printf("Close response error: %s", err.Error())
+			log.Panic("oauth2 response.body close failed. ", err.Error())
 			return
 		}
 	}(resp.Body)
-	content, err := ioutil.ReadAll(resp.Body)
+
+	var profile map[string]interface{}
+	err = json.Unmarshal(content, &profile)
 	if err != nil {
-		fmt.Printf("response read error: %s ", err.Error())
-		return
-	}
-	c.Data(http.StatusOK, "application/json", content)
-}
-
-var oauth2ConfGoogle = &oauth2.Config{
-	ClientID:     "<GOOGLE_CLIENT_ID>",
-	ClientSecret: "<GOOGLE_CLIENT_SECRET>",
-	Endpoint: oauth2.Endpoint{
-		AuthURL:  "https://accounts.google.com/o/oauth2/auth",
-		TokenURL: "https://oauth2.googleapis.com/token",
-	},
-	RedirectURL: "http://localhost:8080/auth/callback",
-	Scopes: []string{
-		"https://www.googleapis.com/auth/userinfo.email",
-		//"https://www.googleapis.com/auth/userinfo.profile",
-	},
-}
-
-func (server *Server) oauth2LoginGoogle(c *gin.Context) {
-	url := oauth2ConfGoogle.AuthCodeURL("random string")
-	c.Redirect(http.StatusTemporaryRedirect, url)
-}
-
-func (server *Server) oauth2CallbackGoogle(c *gin.Context) {
-	if c.Request.FormValue("state") != "random string" {
-		fmt.Println("state is not valid")
-	}
-
-	token, err := oauth2ConfGoogle.Exchange(c, c.Request.FormValue("code"))
-	if err != nil {
-		fmt.Printf("could not get token: %s\n", err.Error())
+		log.Panic("oauth2 profile unmarshal failed. ", err.Error())
 		return
 	}
 
-	resp, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
-	if err != nil {
-		fmt.Printf("could not create get request: %s\n", err.Error())
-		return
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Printf("Close response error: %s", err.Error())
-			return
-		}
-	}(resp.Body)
-	content, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("response read error: %s ", err.Error())
-		return
-	}
-	c.Data(http.StatusOK, "application/json", content)
-	//fmt.Fprintf(ctx.Writer, "Response: %s", content)
-}
-
-var oauthConfKakao = &oauth2.Config{
-	ClientID:     "<KAKAO_CLIENT_ID>", // kakao rest api key
-	ClientSecret: "<KAKAO_CLIENT_SECRET>",
-	Endpoint: oauth2.Endpoint{
-		AuthURL:  "https://kauth.kakao.com/oauth/authorize",
-		TokenURL: "https://kauth.kakao.com/oauth/token",
-	},
-	RedirectURL: "http://localhost:8080/auth/callback/kakao",
-}
-
-func (server *Server) oauth2LoginKakao(c *gin.Context) {
-	url := oauthConfKakao.AuthCodeURL("random string")
-	c.Redirect(http.StatusTemporaryRedirect, url)
-}
-
-func (server *Server) oauth2CallbackKakao(c *gin.Context) {
-	if c.Request.FormValue("state") != "random string" {
-		fmt.Println("state is not valid")
-	}
-
-	token, err := oauthConfKakao.Exchange(c, c.Request.FormValue("code"))
-	if err != nil {
-		fmt.Printf("could not get token: %s\n", err.Error())
-		return
-	}
-
-	client := http.Client{}
-	req, err := http.NewRequest("GET", "https://kapi.kakao.com/v2/user/me", nil)
-	if err != nil {
-		log.Fatal("get kakao user info failed.")
-		return
-	}
-
-	req.Header = http.Header{
-		"Host":          []string{"kapi.kakao.com"},
-		"Authorization": []string{"Bearer " + token.AccessToken},
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Printf("could not create get request: %s\n", err.Error())
-		return
-	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Printf("Close response error: %s", err.Error())
-			return
-		}
-	}(resp.Body)
-	content, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("response read error: %s ", err.Error())
-		return
-	}
-	c.Data(http.StatusOK, "application/json", content)
+	c.JSON(http.StatusOK, profile)
+	//c.Data(http.StatusOK, "application/json", content)
 	//fmt.Fprintf(ctx.Writer, "Response: %s", content)
 }
 
@@ -338,4 +371,17 @@ func (server *Server) DeleteToken(tokenID string) error {
 		return fmt.Errorf("delete refresh token failed")
 	}
 	return nil
+}
+
+func (server *Server) createState(key string) error {
+	ctx := context.Background()
+	err := server.redisClient.Set(ctx, key, "state", time.Minute).Err()
+	return err
+}
+
+func (server *Server) getState(key string) error {
+	ctx := context.Background()
+	_, err := server.redisClient.Get(ctx, key).Result()
+
+	return err
 }
