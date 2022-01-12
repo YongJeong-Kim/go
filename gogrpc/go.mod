@@ -1,4 +1,4 @@
-module github.com/YongJeong-Kim/go/tree/main/gogprc
+module github.com/YongJeong-Kim/go/tree/main/gogrpc
 
 go 1.17
 
