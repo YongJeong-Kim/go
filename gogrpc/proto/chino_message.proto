@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+import "color_enum.proto";
+
+message Chino {
+  string brand = 1;
+  string name = 2;
+  Color color = 3;
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+enum Color {
+  RED = 0;
+  BLUE = 1;
+  GREEN = 2;
+  YELLOW = 3;
+  BLACK = 4;
+}

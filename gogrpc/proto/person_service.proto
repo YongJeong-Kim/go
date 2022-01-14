@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+import "person_message.proto";
+
+message CreatePersonRequest {
+  Person person = 1;
+}
+
+message CreatePersonResponse {
+  string person_id = 1;
+}
+
+service PersonService {
+  rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse) {}
+}

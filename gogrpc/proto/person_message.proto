@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+import "shirt_message.proto";
+import "chino_message.proto";
+
+message Person {
+  Shirt shirt = 1;
+  Chino chino = 2;
+}
