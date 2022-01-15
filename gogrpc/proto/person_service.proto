@@ -13,5 +13,5 @@ message CreatePersonResponse {
 }
 
 service PersonService {
-  rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse) {}
+  rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse) {};
 }

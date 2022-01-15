@@ -6,6 +6,7 @@ import "shirt_message.proto";
 import "chino_message.proto";
 
 message Person {
-  Shirt shirt = 1;
-  Chino chino = 2;
+  string id = 1;
+  Shirt shirt = 2;
+  Chino chino = 3;
 }

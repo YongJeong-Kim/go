@@ -1,6 +1,6 @@
 # Windows
 gen:
-	protoc --proto_path=proto --go_out=. proto/*.proto
+	protoc --proto_path=proto --go_out=. --go-grpc_out=. proto/*.proto
 
 clean:
 	del pb\*.go
@@ -10,6 +10,9 @@ client:
 
 server:
 	go run cmd/server/main.go -port 8080
+
+test:
+	go test -cover ./...
 
 # Linux
 #gen:
