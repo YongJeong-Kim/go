@@ -60,6 +60,22 @@ func (server *PersonServer) CreatePerson(ctx context.Context, req *pb.CreatePers
 	return res, nil
 }
 
+func (server *PersonServer) SearchPerson(
+	req *pb.SearchPersonRequest,
+	stream pb.PersonService_SearchPersonServer,
+) error {
+	filter := req.GetFilter()
+	log.Printf("receive filter: %v", filter)
+
+	err := server.Store.Search(filter, func(person *pb.Person) error {
+
+	})
+
+	if err != nil {
+		
+	}
+}
+
 func contextError(ctx context.Context) error {
 	switch ctx.Err() {
 	case context.Canceled:

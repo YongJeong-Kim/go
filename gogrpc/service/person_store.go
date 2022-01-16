@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/copier"
 	"gogrpc/pb"
+	"log"
 	"sync"
 )
 
@@ -13,6 +14,7 @@ var ErrAlreadyExists = errors.New("already exists person")
 type PersonStore interface {
 	Save(person *pb.Person) error
 	Find(id string) (*pb.Person, error)
+	Search(filter *pb.Filter, found func(person *pb.Person) error) error
 }
 
 type InMemoryPersonStore struct {
@@ -53,4 +55,26 @@ func (store *InMemoryPersonStore) Find(id string) (*pb.Person, error) {
 	} else {
 		return nil, fmt.Errorf("Not Found Person\n")
 	}
+}
+
+func (store *InMemoryPersonStore) Search(filter *pb.Filter, found func(person *pb.Person) error) error {
+	store.mutex.RLock()
+	defer store.mutex.RUnlock()
+
+	for _, person := range store.data {
+		log.Print("filter brand:", filter.Brand)
+		log.Print("person shirt brand:", person.Shirt.Brand)
+		if filter.Brand == person.Shirt.Brand {
+			other := &pb.Person{}
+			err := copier.Copy(other, person)
+			if err != nil {
+				return nil
+			}
+			err = found(other)
+			if err != nil {
+				return nil
+			}
+		}
+	}
+	return nil
 }

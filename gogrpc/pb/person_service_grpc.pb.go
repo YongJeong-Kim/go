@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PersonServiceClient interface {
 	CreatePerson(ctx context.Context, in *CreatePersonRequest, opts ...grpc.CallOption) (*CreatePersonResponse, error)
+	SearchPerson(ctx context.Context, in *SearchPersonRequest, opts ...grpc.CallOption) (PersonService_SearchPersonClient, error)
 }
 
 type personServiceClient struct {
@@ -38,11 +39,44 @@ func (c *personServiceClient) CreatePerson(ctx context.Context, in *CreatePerson
 	return out, nil
 }
 
+func (c *personServiceClient) SearchPerson(ctx context.Context, in *SearchPersonRequest, opts ...grpc.CallOption) (PersonService_SearchPersonClient, error) {
+	stream, err := c.cc.NewStream(ctx, &PersonService_ServiceDesc.Streams[0], "/PersonService/SearchPerson", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &personServiceSearchPersonClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type PersonService_SearchPersonClient interface {
+	Recv() (*SearchPersonResponse, error)
+	grpc.ClientStream
+}
+
+type personServiceSearchPersonClient struct {
+	grpc.ClientStream
+}
+
+func (x *personServiceSearchPersonClient) Recv() (*SearchPersonResponse, error) {
+	m := new(SearchPersonResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // PersonServiceServer is the server API for PersonService service.
 // All implementations must embed UnimplementedPersonServiceServer
 // for forward compatibility
 type PersonServiceServer interface {
 	CreatePerson(context.Context, *CreatePersonRequest) (*CreatePersonResponse, error)
+	SearchPerson(*SearchPersonRequest, PersonService_SearchPersonServer) error
 	mustEmbedUnimplementedPersonServiceServer()
 }
 
@@ -52,6 +86,9 @@ type UnimplementedPersonServiceServer struct {
 
 func (UnimplementedPersonServiceServer) CreatePerson(context.Context, *CreatePersonRequest) (*CreatePersonResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreatePerson not implemented")
+}
+func (UnimplementedPersonServiceServer) SearchPerson(*SearchPersonRequest, PersonService_SearchPersonServer) error {
+	return status.Errorf(codes.Unimplemented, "method SearchPerson not implemented")
 }
 func (UnimplementedPersonServiceServer) mustEmbedUnimplementedPersonServiceServer() {}
 
@@ -84,6 +121,27 @@ func _PersonService_CreatePerson_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PersonService_SearchPerson_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(SearchPersonRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(PersonServiceServer).SearchPerson(m, &personServiceSearchPersonServer{stream})
+}
+
+type PersonService_SearchPersonServer interface {
+	Send(*SearchPersonResponse) error
+	grpc.ServerStream
+}
+
+type personServiceSearchPersonServer struct {
+	grpc.ServerStream
+}
+
+func (x *personServiceSearchPersonServer) Send(m *SearchPersonResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // PersonService_ServiceDesc is the grpc.ServiceDesc for PersonService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -96,6 +154,12 @@ var PersonService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PersonService_CreatePerson_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "SearchPerson",
+			Handler:       _PersonService_SearchPerson_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "person_service.proto",
 }
