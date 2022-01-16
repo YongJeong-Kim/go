@@ -12,6 +12,7 @@ var ErrAlreadyExists = errors.New("already exists person")
 
 type PersonStore interface {
 	Save(person *pb.Person) error
+	Find(id string) (*pb.Person, error)
 }
 
 type InMemoryPersonStore struct {
@@ -41,4 +42,15 @@ func (store *InMemoryPersonStore) Save(person *pb.Person) error {
 
 	store.data[other.Id] = other
 	return nil
+}
+
+func (store *InMemoryPersonStore) Find(id string) (*pb.Person, error) {
+	store.mutex.RLock()
+	defer store.mutex.RUnlock()
+
+	if p, ok := store.data[id]; ok {
+		return p, nil
+	} else {
+		return nil, fmt.Errorf("Not Found Person\n")
+	}
 }

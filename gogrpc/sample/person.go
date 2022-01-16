@@ -1,6 +1,9 @@
 package sample
 
-import "gogrpc/pb"
+import (
+	"github.com/google/uuid"
+	"gogrpc/pb"
+)
 
 func NewPerson() *pb.Person {
 	shirt := &pb.Shirt{
@@ -16,6 +19,7 @@ func NewPerson() *pb.Person {
 	}
 
 	person := &pb.Person{
+		Id:    uuid.NewString(),
 		Shirt: shirt,
 		Chino: chino,
 	}

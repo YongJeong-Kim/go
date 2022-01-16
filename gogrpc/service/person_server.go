@@ -11,14 +11,23 @@ import (
 )
 
 type PersonServer struct {
+	pb.UnimplementedPersonServiceServer
 	Store PersonStore
 }
 
 func NewPersonServer(store PersonStore) *PersonServer {
-	return &PersonServer{store}
+	return &PersonServer{
+		Store: store,
+	}
 }
 
 func (server *PersonServer) CreatePerson(ctx context.Context, req *pb.CreatePersonRequest) (*pb.CreatePersonResponse, error) {
+	//time.Sleep(6 * time.Second)
+
+	if err := contextError(ctx); err != nil {
+		return nil, err
+	}
+
 	person := req.GetPerson()
 	log.Printf("receive a create person id: %s", person.Id)
 
@@ -49,4 +58,22 @@ func (server *PersonServer) CreatePerson(ctx context.Context, req *pb.CreatePers
 	}
 
 	return res, nil
+}
+
+func contextError(ctx context.Context) error {
+	switch ctx.Err() {
+	case context.Canceled:
+		return logError(status.Error(codes.Canceled, "request is canceled."))
+	case context.DeadlineExceeded:
+		return logError(status.Error(codes.DeadlineExceeded, "deadline is exceeded."))
+	default:
+		return nil
+	}
+}
+
+func logError(err error) error {
+	if err != nil {
+		log.Print(err)
+	}
+	return err
 }

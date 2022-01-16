@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gogrpc/pb"
 	"gogrpc/sample"
@@ -14,6 +15,15 @@ import (
 func TestCreatePerson(t *testing.T) {
 	t.Parallel()
 
+	invalidIDPerson := sample.NewPerson()
+	invalidIDPerson.Id = "invalidID"
+
+	duplicatedPerson := sample.NewPerson()
+	duplicatedPerson.Id = uuid.NewString()
+	duplicatedStore := service.NewInMemoryPersonStore()
+	err := duplicatedStore.Save(duplicatedPerson)
+	require.NoError(t, err)
+
 	testCases := []struct {
 		name   string
 		person *pb.Person
@@ -25,6 +35,18 @@ func TestCreatePerson(t *testing.T) {
 			person: sample.NewPerson(),
 			store:  service.NewInMemoryPersonStore(),
 			code:   codes.OK,
+		},
+		{
+			name:   "invalid id person",
+			person: invalidIDPerson,
+			store:  service.NewInMemoryPersonStore(),
+			code:   codes.InvalidArgument,
+		},
+		{
+			name:   "duplicated person",
+			person: duplicatedPerson,
+			store:  duplicatedStore,
+			code:   codes.AlreadyExists,
 		},
 	}
 
@@ -48,12 +70,11 @@ func TestCreatePerson(t *testing.T) {
 					require.Equal(t, tc.person.Id, res.PersonId)
 				}
 			} else {
-				require.NoError(t, err)
-				require.NotNil(t, res)
+				require.Error(t, err)
+				require.Nil(t, res)
 				st, ok := status.FromError(err)
 				require.True(t, ok)
 				require.Equal(t, st.Code(), tc.code)
-
 			}
 		})
 	}
