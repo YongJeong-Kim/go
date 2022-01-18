@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+import "msg_message.proto";
+
+message SendUserRequest {
+  Msg msg = 1;
+}
+
+message SendUserResponse {
+  string id = 1;
+  string from = 2;
+  string content = 3;
+}
+
+message SubscribeRequest {
+  string id = 1;
+}
+
+message SubscribeResponse {
+  string id = 1;
+}
+
+service MsgService {
+  rpc SendToUser(stream SendUserRequest) returns (stream SendUserResponse) {}
+}

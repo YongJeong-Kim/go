@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+message Msg {
+  string id = 1;
+  string to = 2;
+  string from = 3;
+  string content = 4;
+}
