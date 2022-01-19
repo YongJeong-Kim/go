@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+message SubscribeRequest {
+  string id = 1;
+}
+
+message SubscribeResponse {
+  string id = 1;
+}
+
+service SubscribeService {
+  rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse) {}
+}

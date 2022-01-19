@@ -6,6 +6,7 @@ import (
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"io"
 	"log"
 	"time"
@@ -13,8 +14,10 @@ import (
 
 func main() {
 	address := flag.String("address", "0.0.0.0:8080", "server port")
-	to := flag.String("to", "qqq", "input to user")
-	from := flag.String("from", "www", "input from user")
+	id := flag.String("id", "", "input id")
+	to := flag.String("to", "", "input to user")
+	from := flag.String("from", "", "input from user")
+	content := flag.String("content", "", "input content")
 	flag.Parse()
 
 	conn, err := grpc.Dial(*address, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -25,19 +28,35 @@ func main() {
 	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	//defer cancel()
 
+	var md metadata.MD
+	var ctx context.Context
+
+	switch {
+	// subscribe
+	case *id != "" && *to == "" && *from == "":
+		md = metadata.Pairs("id", *id)
+	// send all users
+	case *id == "" && *to == "" && *from != "":
+		md = metadata.Pairs("from", *from)
+	// send specific user
+	case *id == "" && *to != "" && *from != "":
+		md = metadata.Pairs("to", *to, "from", *from)
+	}
+
+	ctx = metadata.NewOutgoingContext(context.Background(), md)
 	msgClient := pb.NewMsgServiceClient(conn)
-	stream, err := msgClient.SendToUser(context.Background())
-	md, _ := stream.Header()
-	log.Print(md)
-	//metadata.AppendToOutgoingContext(stream.Context(), "myidkey", "myidvalue")
-	err = stream.Send(&pb.SendUserRequest{
+	stream, err := msgClient.SendToUser(ctx)
+
+	req := &pb.SendUserRequest{
 		Msg: &pb.Msg{
-			Id:      *from,
+			Id:      *id,
 			To:      *to,
 			From:    *from,
-			Content: "hello, I'm " + *from,
+			Content: *content,
 		},
-	})
+	}
+
+	err = stream.Send(req)
 	if err != nil {
 		err = stream.CloseSend()
 		if err != nil {
@@ -51,15 +70,16 @@ func main() {
 		res, err := stream.Recv()
 		if err == io.EOF {
 			//waitResponse <- nil
-			log.Println("err io EOF in goroutine")
+			log.Println("io EOF in goroutine")
 			return
 		}
 		if err != nil {
 			//waitResponse <- fmt.Errorf("cannot receive stream response: %v", err)
-			log.Println("err not nil in goroutine")
+			log.Println("err not nil in goroutine", err)
 			return
 		}
-		log.Printf("recv: %s, from: %s, id: %s", res.Content, res.From)
+
+		log.Printf("recv: %s", res.Content)
 		time.Sleep(1 * time.Second)
 	}
 	//}()

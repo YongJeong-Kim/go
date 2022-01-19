@@ -2,13 +2,17 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/peer"
 	"io"
 	"log"
 	"sync"
 )
+
+type broadcastPayload struct {
+
+}
 
 type Server struct {
 	pb.UnimplementedMsgServiceServer
@@ -55,13 +59,29 @@ func (server *Server) getClient(id string) (pb.MsgService_SendToUserServer, erro
 }
 
 func (server *Server) SendToUser(stream pb.MsgService_SendToUserServer) error {
-	//id := uuid.NewString()
-	//server.addClient(id, stream)
-	//defer server.removeClient(id)
-	md, _ := metadata.FromIncomingContext(stream.Context())
-	p, _ := peer.FromContext(stream.Context())
-	log.Print(md)
-	log.Print(p)
+	md, ok := metadata.FromIncomingContext(stream.Context())
+	if !ok {
+		return errors.New("incoming context error")
+	}
+
+	id := md.Get("id")
+	if len(id) == 1 {
+		server.addClient(id[0], stream)
+		defer func() {
+			log.Println("before clients: ", server.client)
+			server.removeClient(id[0])
+			log.Println("after clients: ", server.client)
+		}()
+	}
+	log.Print(server.getClients())
+	//p, _ := peer.FromContext(stream.Context())
+	//log.Print(p)
+
+	to := md.Get("to")
+	from := md.Get("from")
+	if len(to) == 1 {
+
+	}
 
 	for {
 		req, err := stream.Recv()
@@ -74,37 +94,42 @@ func (server *Server) SendToUser(stream pb.MsgService_SendToUserServer) error {
 		}
 
 		msg := req.GetMsg()
-		id := msg.GetId()
-		server.addClient(id, stream)
 		log.Printf("server recv id: %s", id)
-		//defer server.removeClient(id)
-		//toID := msg.GetTo()
+		log.Printf("id: %s, to: %s, from: %s, content: %s", msg.GetId(), msg.GetTo(), msg.GetFrom(), msg.GetContent())
 
-		//client, err := server.getClient(toID)
-		//if err != nil {
-		//	return errors.New("not found client")
-		//}
-		//res := &pb.SendUserResponse{
-		//	Id:      id,
-		//	From:    msg.GetFrom(),
-		//	Content: msg.GetContent(),
-		//}
-		//err = client.Send(res)
-		//if err != nil {
-		//	return err
-		//}
-
-		for _, st := range server.getClients() {
-			res := &pb.SendUserResponse{
-				Id:      id,
-				From:    msg.GetFrom(),
-				Content: msg.GetContent(),
-			}
-			err := st.Send(res)
+		// send
+		if len(to) == 1 && len(from) == 1 {
+			st, err := server.getClient(to[0])
 			if err != nil {
 				return err
 			}
+			res := &pb.SendUserResponse{
+				Id:      "",
+				From:    msg.GetFrom(),
+				Content: fmt.Sprintf("%s, I'm %s", msg.GetContent(), msg.GetFrom()),
+			}
+			err = st.Send(res)
+			if err != nil {
+				return err
+			}
+			break
+		} else if len(to) == 0 && len(from) == 1 { // send all
+			res := &pb.SendUserResponse{
+				From: msg.GetFrom(),
+				Content: fmt.Sprintf("%s, I'm %s", msg.GetContent(), msg.GetFrom()),
+			}
+			for _, st := range server.getClients() {
+				err = st.Send(res)
+				if err != nil {
+					return err
+				}
+			}
+			break
 		}
 	}
 	return nil
+}
+
+func (server *Server) Subscribe(req *pb.SubscribeRequest, stream pb.SubscribeService_SubscribeServer) error {
+
 }
