@@ -10,10 +10,6 @@ import (
 	"sync"
 )
 
-type broadcastPayload struct {
-
-}
-
 type Server struct {
 	pb.UnimplementedMsgServiceServer
 	mu     sync.RWMutex
@@ -128,8 +124,4 @@ func (server *Server) SendToUser(stream pb.MsgService_SendToUserServer) error {
 		}
 	}
 	return nil
-}
-
-func (server *Server) Subscribe(req *pb.SubscribeRequest, stream pb.SubscribeService_SubscribeServer) error {
-
 }
