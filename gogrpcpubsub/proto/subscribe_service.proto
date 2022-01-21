@@ -12,4 +12,5 @@ message SubscribeResponse {
 
 service SubscribeService {
   rpc Subscribe(SubscribeRequest) returns (stream SubscribeResponse);
+  rpc SubscribeBidi(stream SubscribeRequest) returns (stream SubscribeResponse);
 }

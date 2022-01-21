@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type SubscribeServiceClient interface {
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (SubscribeService_SubscribeClient, error)
+	SubscribeBidi(ctx context.Context, opts ...grpc.CallOption) (SubscribeService_SubscribeBidiClient, error)
 }
 
 type subscribeServiceClient struct {
@@ -65,11 +66,43 @@ func (x *subscribeServiceSubscribeClient) Recv() (*SubscribeResponse, error) {
 	return m, nil
 }
 
+func (c *subscribeServiceClient) SubscribeBidi(ctx context.Context, opts ...grpc.CallOption) (SubscribeService_SubscribeBidiClient, error) {
+	stream, err := c.cc.NewStream(ctx, &SubscribeService_ServiceDesc.Streams[1], "/SubscribeService/SubscribeBidi", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &subscribeServiceSubscribeBidiClient{stream}
+	return x, nil
+}
+
+type SubscribeService_SubscribeBidiClient interface {
+	Send(*SubscribeRequest) error
+	Recv() (*SubscribeResponse, error)
+	grpc.ClientStream
+}
+
+type subscribeServiceSubscribeBidiClient struct {
+	grpc.ClientStream
+}
+
+func (x *subscribeServiceSubscribeBidiClient) Send(m *SubscribeRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *subscribeServiceSubscribeBidiClient) Recv() (*SubscribeResponse, error) {
+	m := new(SubscribeResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // SubscribeServiceServer is the server API for SubscribeService service.
 // All implementations must embed UnimplementedSubscribeServiceServer
 // for forward compatibility
 type SubscribeServiceServer interface {
 	Subscribe(*SubscribeRequest, SubscribeService_SubscribeServer) error
+	SubscribeBidi(SubscribeService_SubscribeBidiServer) error
 	mustEmbedUnimplementedSubscribeServiceServer()
 }
 
@@ -79,6 +112,9 @@ type UnimplementedSubscribeServiceServer struct {
 
 func (UnimplementedSubscribeServiceServer) Subscribe(*SubscribeRequest, SubscribeService_SubscribeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Subscribe not implemented")
+}
+func (UnimplementedSubscribeServiceServer) SubscribeBidi(SubscribeService_SubscribeBidiServer) error {
+	return status.Errorf(codes.Unimplemented, "method SubscribeBidi not implemented")
 }
 func (UnimplementedSubscribeServiceServer) mustEmbedUnimplementedSubscribeServiceServer() {}
 
@@ -114,6 +150,32 @@ func (x *subscribeServiceSubscribeServer) Send(m *SubscribeResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
+func _SubscribeService_SubscribeBidi_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(SubscribeServiceServer).SubscribeBidi(&subscribeServiceSubscribeBidiServer{stream})
+}
+
+type SubscribeService_SubscribeBidiServer interface {
+	Send(*SubscribeResponse) error
+	Recv() (*SubscribeRequest, error)
+	grpc.ServerStream
+}
+
+type subscribeServiceSubscribeBidiServer struct {
+	grpc.ServerStream
+}
+
+func (x *subscribeServiceSubscribeBidiServer) Send(m *SubscribeResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *subscribeServiceSubscribeBidiServer) Recv() (*SubscribeRequest, error) {
+	m := new(SubscribeRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // SubscribeService_ServiceDesc is the grpc.ServiceDesc for SubscribeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -126,6 +188,12 @@ var SubscribeService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Subscribe",
 			Handler:       _SubscribeService_Subscribe_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "SubscribeBidi",
+			Handler:       _SubscribeService_SubscribeBidi_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "subscribe_service.proto",

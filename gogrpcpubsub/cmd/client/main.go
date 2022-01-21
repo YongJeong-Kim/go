@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/google/uuid"
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -88,7 +89,8 @@ func msg() {
 }
 
 func main() {
-	subscribe()
+	//subscribe()
+	subscribeBidi()
 }
 
 func subscribe() {
@@ -153,4 +155,49 @@ func subscribe() {
 		return
 	}
 	<-waitc
+}
+
+func subscribeBidi() {
+	address := flag.String("address", "0.0.0.0:8080", "server address")
+	_ = flag.String("to", "", "input to user")
+	_ = flag.String("from", "", "input from user")
+	flag.Parse()
+
+	md := metadata.Pairs("aa", "bb")
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+	conn, err := grpc.Dial(*address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal("connection failed")
+	}
+	client := pb.NewSubscribeServiceClient(conn)
+	stream, err := client.SubscribeBidi(ctx)
+	if err != nil {
+		log.Print("client subscribe bidi error", err)
+	}
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				log.Print("no more data from server")
+				break
+			}
+			if err != nil {
+				log.Print("err is not nil", err)
+			}
+			log.Printf("recv client id: %s", res.Id)
+		}
+	}()
+
+	id := uuid.NewString()
+	for {
+		req := &pb.SubscribeRequest{
+			Id: id,
+		}
+		err := stream.Send(req)
+		if err != nil {
+			log.Print("send error")
+		}
+		time.Sleep(1 * time.Second)
+	}
 }

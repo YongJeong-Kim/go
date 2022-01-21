@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"github.com/google/uuid"
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"log"
 )
 
@@ -92,4 +94,28 @@ func (subsServer *SubsServer) Subscribe(req *pb.SubscribeRequest, stream pb.Subs
 			return nil
 		}
 	}
+}
+
+func (subsServer *SubsServer) SubscribeBidi(stream pb.SubscribeService_SubscribeBidiServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			log.Print("no more data")
+			break
+		}
+		if err != nil {
+			log.Print("subscribe bidi from server", err)
+			return err
+		}
+
+		res := &pb.SubscribeResponse{
+			Id: fmt.Sprintf("bidi response from server: %s", req.Id),
+		}
+		err = stream.Send(res)
+		if err != nil {
+			log.Print("send fail from server")
+			return err
+		}
+	}
+	return nil
 }
