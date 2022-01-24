@@ -184,6 +184,7 @@ func subscribeBidi() {
 			}
 			if err != nil {
 				log.Print("err is not nil", err)
+				return
 			}
 			log.Printf("recv client id: %s", res.Id)
 		}
@@ -197,6 +198,7 @@ func subscribeBidi() {
 		err := stream.Send(req)
 		if err != nil {
 			log.Print("send error")
+			break
 		}
 		time.Sleep(1 * time.Second)
 	}
