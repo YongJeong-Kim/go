@@ -40,9 +40,11 @@ func main() {
 			res, err := stream.Recv()
 			if err == io.EOF {
 				log.Print("no more data")
+				break
 			}
 			if err != nil {
 				log.Print("recv error", err)
+				close(waitc)
 			}
 			log.Print("recv :", res)
 		}

@@ -34,8 +34,16 @@ type BidiPayload struct {
 
 func NewSubsServer() *SubsServer {
 	return &SubsServer{
-		broadcast: make(chan *BroadcastPayload),
-		client:    make(map[string]pb.SubscribeService_SubscribeBidiServer),
+		broadcast:   make(chan *BroadcastPayload),
+		client:      make(map[string]pb.SubscribeService_SubscribeBidiServer),
+		bidiPayload: make(chan *BidiPayload),
+	}
+}
+
+func NewBidiPayload() *BidiPayload {
+	return &BidiPayload{
+		Response: make(chan *pb.SubscribeResponse),
+		Event:    "",
 	}
 }
 
@@ -83,9 +91,9 @@ func (subsServer *SubsServer) Subscribe(req *pb.SubscribeRequest, stream pb.Subs
 		for v := range subsServer.broadcast {
 			log.Print(v)
 			switch v.Event {
-			case "add connection":
+			case "subscribe":
 				log.Print("add connection in goroutine")
-			case "remove connection":
+			case "unsubscribe":
 				log.Print("remove connection in goroutine")
 			case "receive response":
 				log.Print("receive response in goroutine")
@@ -137,37 +145,83 @@ func (subsServer *SubsServer) SubscribeBidi(stream pb.SubscribeService_Subscribe
 }
 
 func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_SubscribeBidiServer, errCh chan error) {
-	event := make(chan string)
 	res := make(chan *pb.SubscribeResponse)
+	payload := make(chan *BidiPayload)
 
 	go func() {
-		select {
-		case <-stream.Context().Done():
-			switch stream.Context().Err() {
-			case context.Canceled:
-				log.Print("client canceled")
-			case context.DeadlineExceeded:
-				log.Print("client deadline exceeded")
-			}
-			//subsServer.broadcast <- &BroadcastPayload{
-			//	ID:    "",
-			//	Event: "receive response",
-			//}
-		case response := <-res:
-			log.Print("case response,", response)
-			if st, ok := status.FromError(stream.Send(response)); ok {
-				log.Print("response in if")
-				switch st.Code() {
-				case codes.OK:
-					log.Print("codes ok")
-				case codes.Unavailable, codes.Canceled, codes.DeadlineExceeded:
-					log.Print("codes unavailable, cancel, deadline")
+		for {
+			select {
+			case <-stream.Context().Done():
+				switch stream.Context().Err() {
+				case context.Canceled:
+					log.Print("client canceled")
+					errCh <- errors.New("client canceled")
+				case context.DeadlineExceeded:
+					log.Print("client deadline exceeded")
+					errCh <- errors.New("client deadline exceeded")
 				default:
-					log.Print("default case")
+					errCh <- errors.New("select case default")
+				}
+			case response := <-res:
+				log.Print("case response,", response)
+				if st, ok := status.FromError(stream.Send(response)); ok {
+					log.Print("response in if")
+					switch st.Code() {
+					case codes.OK:
+						log.Print("codes ok")
+					case codes.Unavailable, codes.Canceled, codes.DeadlineExceeded:
+						log.Print("codes unavailable, cancel, deadline")
+					default:
+						log.Print("default case")
+					}
 				}
 			}
+		}
+	}()
+
+	go func() {
+		//log.Print("subserver bidi payload")
+		//<-subsServer.bidiPayload
+		p := <-payload
+		log.Print(p)
+		//for v := range subsServer.bidiPayload {
+		switch p.Event {
+		case "subscribe":
+			log.Print("subscribe")
+			//id := req.GetId()
+			//log.Printf("add client: %v", id)
+			//subsServer.addClient(id, stream)
+			//res <- &pb.SubscribeResponse{
+			//	Id: "res res res",
+			//}
+		case "unsubscribe":
+			log.Print("unsubscribe")
+			//id := req.GetId()
+			//log.Printf("remove client: %v", id)
+			//subsServer.removeClient(id)
+		case "sendToUser":
+			log.Print("sendToUser")
+			//log.Printf("send to user, to: %v, from: %v", req.GetTo(), req.GetFrom())
+			//to := req.GetTo()
+			//client, err := subsServer.getClient(to)
+			//if err != nil {
+			//	log.Print("get client failed.", err)
+			//	break
+			//}
+			//err = client.Send(&pb.SubscribeResponse{
+			//	From:    req.GetFrom(),
+			//	Content: req.GetContent(),
+			//})
+			//if err != nil {
+			//	log.Print("server send err", err)
+			//	break
+			//}
+		case "send to all":
+			log.Print("send to all")
 		default:
-			log.Print("default in for select")
+			log.Print("default event, no action")
+			//log.Print("default event, no action", req)
+			errCh <- errors.New("default event, no action")
 		}
 	}()
 
@@ -175,63 +229,30 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		req, err := stream.Recv()
 		if err == io.EOF {
 			log.Print("no more data")
+			break
 		}
 		if err != nil {
-			go func() {
-				event <- "remove client"
-			}()
 			log.Print("receive from server err is not nil", err)
+			errCh <- err
 		}
 
-		go func() {
-			//event <- req.GetEvent()
-			log.Print("set bidi payload")
-			subsServer.bidiPayload <- &BidiPayload{
-				Event: req.GetEvent(),
-			}
-		}()
-		go func() {
-			log.Print("subserver bidi payload")
-			<-subsServer.bidiPayload
-			for v := range subsServer.bidiPayload {
-				switch v.Event {
-				case "subscribe":
-					id := req.GetId()
-					log.Printf("add client: %v", id)
-					subsServer.addClient(id, stream)
-					res <- &pb.SubscribeResponse{
-						Id: "res res res",
-					}
-				case "unsubscribe":
-					id := req.GetId()
-					log.Printf("remove client: %v", id)
-					subsServer.removeClient(id)
-				case "sendToUser":
-					log.Printf("send to user, to: %v, from: %v", req.GetTo(), req.GetFrom())
-					to := req.GetTo()
-					client, err := subsServer.getClient(to)
-					if err != nil {
-						log.Print("get client failed.", err)
-						break
-					}
-					err = client.Send(&pb.SubscribeResponse{
-						From:    req.GetFrom(),
-						Content: req.GetContent(),
-					})
-					if err != nil {
-						log.Print("server send err", err)
-						break
-					}
-				case "send to all":
-					log.Print("send to all")
-				default:
-					log.Print("default event, no action", req)
-					errCh <- errors.New("default event, no action")
-				}
-			}
-		}()
+		//go func() {
+		//event <- req.GetEvent()
+		log.Print("set bidi payload event:", req.GetEvent())
+		res <- &pb.SubscribeResponse{
+			Id: "aa",
+		}
+		//subsServer.bidiPayload <- &BidiPayload{
+		//	Response: res,
+		//	Event:    req.GetEvent(),
+		//}
+		//p := NewBidiPayload()
+		//p.Event = "subscribe"
+		//payload <- p
+		//}()
 
 	}
+
 }
 
 func (subsServer *SubsServer) sendMessage(stream pb.SubscribeService_SubscribeServer, errCh chan error) {
