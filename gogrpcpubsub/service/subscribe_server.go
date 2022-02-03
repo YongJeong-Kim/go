@@ -28,7 +28,8 @@ type BroadcastPayload struct {
 }
 
 type BidiPayload struct {
-	Response chan *pb.SubscribeResponse
+	Request  *pb.SubscribeRequest
+	Response *pb.SubscribeResponse
 	Event    string
 }
 
@@ -42,7 +43,7 @@ func NewSubsServer() *SubsServer {
 
 func NewBidiPayload() *BidiPayload {
 	return &BidiPayload{
-		Response: make(chan *pb.SubscribeResponse),
+		Response: nil,
 		Event:    "",
 	}
 }
@@ -188,12 +189,12 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		switch p.Event {
 		case "subscribe":
 			log.Print("subscribe")
-			//id := req.GetId()
-			//log.Printf("add client: %v", id)
-			//subsServer.addClient(id, stream)
-			//res <- &pb.SubscribeResponse{
-			//	Id: "res res res",
-			//}
+
+			res <- &pb.SubscribeResponse{
+				Id:      p.Request.GetId(),
+				From:    p.Request.GetFrom(),
+				Content: p.Request.GetContent(),
+			}
 		case "unsubscribe":
 			log.Print("unsubscribe")
 			//id := req.GetId()
@@ -239,16 +240,23 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		//go func() {
 		//event <- req.GetEvent()
 		log.Print("set bidi payload event:", req.GetEvent())
-		res <- &pb.SubscribeResponse{
-			Id: "aa",
-		}
+		//res <- &pb.SubscribeResponse{
+		//	Id: "aa",
+		//}
 		//subsServer.bidiPayload <- &BidiPayload{
 		//	Response: res,
 		//	Event:    req.GetEvent(),
 		//}
-		//p := NewBidiPayload()
-		//p.Event = "subscribe"
-		//payload <- p
+		p := NewBidiPayload()
+		p.Request = &pb.SubscribeRequest{
+			Id:      req.GetId(),
+			From:    req.GetFrom(),
+			Content: req.GetContent(),
+			Event:   req.GetEvent(),
+			To:      req.GetTo(),
+		}
+		p.Event = req.GetEvent()
+		payload <- p
 		//}()
 
 	}
