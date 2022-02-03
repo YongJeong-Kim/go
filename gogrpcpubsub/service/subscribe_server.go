@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc/codes"
@@ -31,6 +32,7 @@ type BidiPayload struct {
 	Request  *pb.SubscribeRequest
 	Response *pb.SubscribeResponse
 	Event    string
+	stream   pb.SubscribeService_SubscribeBidiServer
 }
 
 func NewSubsServer() *SubsServer {
@@ -146,8 +148,8 @@ func (subsServer *SubsServer) SubscribeBidi(stream pb.SubscribeService_Subscribe
 }
 
 func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_SubscribeBidiServer, errCh chan error) {
-	res := make(chan *pb.SubscribeResponse)
-	payload := make(chan *BidiPayload)
+	res := make(chan *pb.SubscribeResponse, 1)
+	payload := make(chan *BidiPayload, 1)
 
 	go func() {
 		for {
@@ -180,6 +182,7 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		}
 	}()
 
+	//go subsServer.SelectEvent(payload, res, errCh)
 	go func() {
 		//log.Print("subserver bidi payload")
 		//<-subsServer.bidiPayload
@@ -190,6 +193,9 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		case "subscribe":
 			log.Print("subscribe")
 
+			id := p.Request.GetId()
+			subsServer.addClient(id, stream)
+			log.Printf("subscribe %v", subsServer.client)
 			res <- &pb.SubscribeResponse{
 				Id:      p.Request.GetId(),
 				From:    p.Request.GetFrom(),
@@ -197,8 +203,30 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 			}
 		case "unsubscribe":
 			log.Print("unsubscribe")
+			id := p.Request.GetId()
+			log.Printf("unsubscribe %v", subsServer.client)
+			client, err := subsServer.getClient(id)
+			if err != nil {
+				log.Print("get client error. ", err)
+			}
+			err = client.Send(&pb.SubscribeResponse{
+				Id: fmt.Sprintf("%s was unsubscribed", id),
+			})
+			if err != nil {
+				log.Print("client send error from server. ", err)
+			}
+			subsServer.removeClient(id)
+			log.Print("current clients: ", subsServer.client)
+			//if err != nil {
+			//	res <- &pb.SubscribeResponse{
+			//		Id: "err is not nil",
+			//	}
+			//}
+			res <- &pb.SubscribeResponse{
+				Id: fmt.Sprintf("%s was unsubscribed", id),
+			}
 			//id := req.GetId()
-			//log.Printf("remove client: %v", id)
+			log.Printf("all client: %v", subsServer.client)
 			//subsServer.removeClient(id)
 		case "sendToUser":
 			log.Print("sendToUser")
@@ -237,16 +265,8 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 			errCh <- err
 		}
 
-		//go func() {
-		//event <- req.GetEvent()
 		log.Print("set bidi payload event:", req.GetEvent())
-		//res <- &pb.SubscribeResponse{
-		//	Id: "aa",
-		//}
-		//subsServer.bidiPayload <- &BidiPayload{
-		//	Response: res,
-		//	Event:    req.GetEvent(),
-		//}
+
 		p := NewBidiPayload()
 		p.Request = &pb.SubscribeRequest{
 			Id:      req.GetId(),
@@ -257,10 +277,7 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		}
 		p.Event = req.GetEvent()
 		payload <- p
-		//}()
-
 	}
-
 }
 
 func (subsServer *SubsServer) sendMessage(stream pb.SubscribeService_SubscribeServer, errCh chan error) {
@@ -268,3 +285,61 @@ func (subsServer *SubsServer) sendMessage(stream pb.SubscribeService_SubscribeSe
 	//	stream.Send()
 	//}
 }
+
+//func (subsServer *SubsServer) SelectEvent(payload chan *BidiPayload, response chan *pb.SubscribeResponse, errCh chan error) {
+//	p := <-payload
+//	log.Print(p)
+//
+//	switch p.Event {
+//	case "subscribe":
+//		log.Print("subscribe")
+//		id := p.Request.GetId()
+//		subsServer.addClient(id, p.stream)
+//		log.Printf("subscribe %v", subsServer.client)
+//		response <- &pb.SubscribeResponse{
+//			Id:      p.Request.GetId(),
+//			From:    p.Request.GetFrom(),
+//			Content: p.Request.GetContent(),
+//		}
+//	case "unsubscribe":
+//		log.Print("unsubscribe")
+//		id := p.Request.GetId()
+//		subsServer.removeClient(id)
+//		log.Printf("unsubscribe %v", subsServer.client)
+//		client, err := subsServer.getClient(id)
+//		if err != nil {
+//			response <- &pb.SubscribeResponse{
+//				Id: "err is not nil",
+//			}
+//		}
+//		response <- &pb.SubscribeResponse{
+//			Id: id,
+//		}
+//		//id := req.GetId()
+//		//log.Printf("remove client: %v", id)
+//		//subsServer.removeClient(id)
+//	case "sendToUser":
+//		log.Print("sendToUser")
+//		//log.Printf("send to user, to: %v, from: %v", req.GetTo(), req.GetFrom())
+//		//to := req.GetTo()
+//		//client, err := subsServer.getClient(to)
+//		//if err != nil {
+//		//	log.Print("get client failed.", err)
+//		//	break
+//		//}
+//		//err = client.Send(&pb.SubscribeResponse{
+//		//	From:    req.GetFrom(),
+//		//	Content: req.GetContent(),
+//		//})
+//		//if err != nil {
+//		//	log.Print("server send err", err)
+//		//	break
+//		//}
+//	case "send to all":
+//		log.Print("send to all")
+//	default:
+//		log.Print("default event, no action")
+//		//log.Print("default event, no action", req)
+//		errCh <- errors.New("default event, no action")
+//	}
+//}
