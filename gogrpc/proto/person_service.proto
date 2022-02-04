@@ -21,7 +21,16 @@ message SearchPersonResponse {
   Person person = 1;
 }
 
+message UploadImageRequest {
+  bytes chunk_data = 1;
+}
+
+message UploadImageResponse {
+  uint32 size = 1;
+}
+
 service PersonService {
   rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse) {};
   rpc SearchPerson(SearchPersonRequest) returns (stream SearchPersonResponse) {};
+  rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse) {};
 }

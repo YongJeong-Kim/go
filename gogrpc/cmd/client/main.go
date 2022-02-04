@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"gogrpc/pb"
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 	"io"
 	"log"
+	"os"
 	"time"
 )
 
@@ -75,13 +77,69 @@ func main() {
 	}
 
 	personClient := pb.NewPersonServiceClient(conn)
+	// create
 	//createPerson(personClient)
 
-	for i := 0; i < 10; i++ {
-		createPerson(personClient)
+	// search
+	//for i := 0; i < 10; i++ {
+	//	createPerson(personClient)
+	//}
+	//filter := &pb.Filter{
+	//	Brand: "LACOSTE",
+	//}
+	//searchPerson(personClient, filter)
+
+	stream, err := personClient.UploadImage(context.Background())
+	if err != nil {
+		return
 	}
-	filter := &pb.Filter{
-		Brand: "LACOSTE",
+
+	//file, err := os.Open("C:\\Users\\admin\\Desktop\\ggo.png")
+	file, err := os.Open("C:\\Users\\admin\\Downloads\\Docker Desktop Installer.exe")
+	if err != nil {
+		log.Fatal("cannot open image file: ", err)
 	}
-	searchPerson(personClient, filter)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal("close file failed")
+		}
+	}(file)
+
+	err = stream.Send(&pb.UploadImageRequest{
+		ChunkData: nil,
+	})
+	if err != nil {
+		log.Fatal("cannot send image data")
+	}
+
+	reader := bufio.NewReader(file)
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := reader.Read(buffer)
+		if err == io.EOF {
+			log.Print("read image buffer end")
+			break
+		}
+		if err != nil {
+			log.Fatal("cannot read chunk to buffer: ", err)
+		}
+
+		req := &pb.UploadImageRequest{
+			ChunkData: buffer[:n],
+		}
+
+		err = stream.Send(req)
+		if err != nil {
+			log.Fatal("cannot send chunk to server: ", err, stream.RecvMsg(nil))
+		}
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatal("cannot receive response: ", err)
+	}
+
+	log.Printf("image uploaded with size: %d", res.GetSize())
 }

@@ -1,14 +1,18 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"github.com/google/uuid"
 	"gogrpc/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"io"
 	"log"
 )
+
+const maxImageSize = 1 << 50
 
 type PersonServer struct {
 	pb.UnimplementedPersonServiceServer
@@ -60,20 +64,79 @@ func (server *PersonServer) CreatePerson(ctx context.Context, req *pb.CreatePers
 	return res, nil
 }
 
-func (server *PersonServer) SearchPerson(
-	req *pb.SearchPersonRequest,
-	stream pb.PersonService_SearchPersonServer,
-) error {
-	filter := req.GetFilter()
-	log.Printf("receive filter: %v", filter)
+//func (server *PersonServer) SearchPerson(
+//	req *pb.SearchPersonRequest,
+//	stream pb.PersonService_SearchPersonServer,
+//) error {
+//	filter := req.GetFilter()
+//	log.Printf("receive filter: %v", filter)
+//
+//	err := server.Store.Search(filter, func(person *pb.Person) error {
+//
+//	})
+//
+//	if err != nil {
+//
+//	}
+//}
 
-	err := server.Store.Search(filter, func(person *pb.Person) error {
-
-	})
-
+func (server *PersonServer) UploadImage(stream pb.PersonService_UploadImageServer) error {
+	req, err := stream.Recv()
 	if err != nil {
-		
+		log.Print("recv error", err)
 	}
+	log.Print("req from client: ", req)
+
+	imageData := bytes.Buffer{}
+	imageSize := 0
+
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			log.Print("no more data")
+			break
+		}
+		if err != nil {
+			return logError(err)
+		}
+
+		chunk := req.GetChunkData()
+		size := len(chunk)
+
+		imageSize += size
+		if imageSize > maxImageSize {
+			return logError(status.Errorf(codes.InvalidArgument, "image is too large: %d > %d", imageSize, maxImageSize))
+		}
+
+		_, err = imageData.Write(chunk)
+		if err != nil {
+			return logError(status.Errorf(codes.Internal, "cannot write chunk data: %v", err))
+		}
+	}
+	//imageID, err := server.imageStore.Save(laptopID, imageType, imageData)
+	//if err != nil {
+	//	return logError(status.Errorf(codes.Internal, "cannot save image to the store: %v", err))
+	//}
+
+	// save file
+	//savePath := "C:\\Users\\admin\\Desktop\\Docker Desktop Installer.exe"
+	//err = ioutil.WriteFile(savePath, imageData.Bytes(), 0644)
+	//if err != nil {
+	//	return logError(status.Errorf(codes.Internal, "cannot save image file %v", err))
+	//}
+
+	res := &pb.UploadImageResponse{
+		//Id:   imageID,
+		Size: uint32(imageSize),
+	}
+
+	err = stream.SendAndClose(res)
+	if err != nil {
+		return logError(status.Errorf(codes.Unknown, "cannot send response: %v", err))
+	}
+
+	log.Printf("saved image with size: %d", imageSize)
+	return nil
 }
 
 func contextError(ctx context.Context) error {

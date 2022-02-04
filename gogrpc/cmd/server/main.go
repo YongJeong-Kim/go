@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	port := flag.Int("port", 0, "server port")
+	port := flag.Int("port", 8080, "server port")
 	flag.Parse()
 
 	personServer := service.NewPersonServer(service.NewInMemoryPersonStore())
