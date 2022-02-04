@@ -182,7 +182,6 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		}
 	}()
 
-	//go subsServer.SelectEvent(payload, res, errCh)
 	go func() {
 		//log.Print("subserver bidi payload")
 		//<-subsServer.bidiPayload
@@ -231,20 +230,18 @@ func (subsServer *SubsServer) receiveMessage(stream pb.SubscribeService_Subscrib
 		case "sendToUser":
 			log.Print("sendToUser")
 			//log.Printf("send to user, to: %v, from: %v", req.GetTo(), req.GetFrom())
-			//to := req.GetTo()
-			//client, err := subsServer.getClient(to)
-			//if err != nil {
-			//	log.Print("get client failed.", err)
-			//	break
-			//}
-			//err = client.Send(&pb.SubscribeResponse{
-			//	From:    req.GetFrom(),
-			//	Content: req.GetContent(),
-			//})
-			//if err != nil {
-			//	log.Print("server send err", err)
-			//	break
-			//}
+			to := p.Request.GetTo()
+			client, err := subsServer.getClient(to)
+			if err != nil {
+				log.Print("get client failed.", err)
+			}
+			err = client.Send(&pb.SubscribeResponse{
+				From:    p.Request.GetFrom(),
+				Content: p.Request.GetContent(),
+			})
+			if err != nil {
+				log.Print("server send err", err)
+			}
 		case "send to all":
 			log.Print("send to all")
 		default:
@@ -285,61 +282,3 @@ func (subsServer *SubsServer) sendMessage(stream pb.SubscribeService_SubscribeSe
 	//	stream.Send()
 	//}
 }
-
-//func (subsServer *SubsServer) SelectEvent(payload chan *BidiPayload, response chan *pb.SubscribeResponse, errCh chan error) {
-//	p := <-payload
-//	log.Print(p)
-//
-//	switch p.Event {
-//	case "subscribe":
-//		log.Print("subscribe")
-//		id := p.Request.GetId()
-//		subsServer.addClient(id, p.stream)
-//		log.Printf("subscribe %v", subsServer.client)
-//		response <- &pb.SubscribeResponse{
-//			Id:      p.Request.GetId(),
-//			From:    p.Request.GetFrom(),
-//			Content: p.Request.GetContent(),
-//		}
-//	case "unsubscribe":
-//		log.Print("unsubscribe")
-//		id := p.Request.GetId()
-//		subsServer.removeClient(id)
-//		log.Printf("unsubscribe %v", subsServer.client)
-//		client, err := subsServer.getClient(id)
-//		if err != nil {
-//			response <- &pb.SubscribeResponse{
-//				Id: "err is not nil",
-//			}
-//		}
-//		response <- &pb.SubscribeResponse{
-//			Id: id,
-//		}
-//		//id := req.GetId()
-//		//log.Printf("remove client: %v", id)
-//		//subsServer.removeClient(id)
-//	case "sendToUser":
-//		log.Print("sendToUser")
-//		//log.Printf("send to user, to: %v, from: %v", req.GetTo(), req.GetFrom())
-//		//to := req.GetTo()
-//		//client, err := subsServer.getClient(to)
-//		//if err != nil {
-//		//	log.Print("get client failed.", err)
-//		//	break
-//		//}
-//		//err = client.Send(&pb.SubscribeResponse{
-//		//	From:    req.GetFrom(),
-//		//	Content: req.GetContent(),
-//		//})
-//		//if err != nil {
-//		//	log.Print("server send err", err)
-//		//	break
-//		//}
-//	case "send to all":
-//		log.Print("send to all")
-//	default:
-//		log.Print("default event, no action")
-//		//log.Print("default event, no action", req)
-//		errCh <- errors.New("default event, no action")
-//	}
-//}

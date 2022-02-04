@@ -6,6 +6,7 @@ import (
 	"gogrpcpubsub/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"io"
 	"log"
 )
 
@@ -28,6 +29,22 @@ func main() {
 	}
 
 	waitc := make(chan struct{})
+
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
+				log.Print("EOF")
+				break
+			}
+			if err != nil {
+				log.Print(err)
+				return
+			}
+			log.Print(res)
+		}
+	}()
+
 	req := &pb.SubscribeRequest{
 		To:      *to,
 		From:    *from,
