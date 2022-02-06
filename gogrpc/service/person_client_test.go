@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
 	"testing"
@@ -92,6 +93,8 @@ func TestClientUploadImage(t *testing.T) {
 	require.EqualValues(t, res.GetSize(), size)
 
 	savedImagePath := fmt.Sprintf("%s/%s", testImageFolder, "tmp_" + filename)
+	err = ioutil.WriteFile(savedImagePath, buffer, 0644)
+	require.NoError(t, err)
 	require.FileExists(t, savedImagePath)
 	require.NoError(t, os.Remove(savedImagePath))
 }
