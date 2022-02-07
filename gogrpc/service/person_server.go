@@ -64,21 +64,37 @@ func (server *PersonServer) CreatePerson(ctx context.Context, req *pb.CreatePers
 	return res, nil
 }
 
-//func (server *PersonServer) SearchPerson(
-//	req *pb.SearchPersonRequest,
-//	stream pb.PersonService_SearchPersonServer,
-//) error {
-//	filter := req.GetFilter()
-//	log.Printf("receive filter: %v", filter)
-//
-//	err := server.Store.Search(filter, func(person *pb.Person) error {
-//
-//	})
-//
-//	if err != nil {
-//
-//	}
-//}
+func (server *PersonServer) SearchPerson(
+	req *pb.SearchPersonRequest,
+	stream pb.PersonService_SearchPersonServer,
+) error {
+	filter := req.GetFilter()
+	log.Printf("receive filter: %v", filter)
+
+	err := server.Store.Search(
+		stream.Context(),
+		filter,
+		func(person *pb.Person) error {
+			res := &pb.SearchPersonResponse{
+				Person: &pb.Person{
+					Id: "",
+				},
+			}
+			err := stream.Send(res)
+			if err != nil {
+				return err
+			}
+			log.Printf("sent person id: %s", person.GetId())
+			return nil
+		},
+	)
+
+	if err != nil {
+		return status.Errorf(codes.Internal, "unexpected error: %v", err)
+	}
+
+	return nil
+}
 
 func (server *PersonServer) UploadImage(stream pb.PersonService_UploadImageServer) error {
 	req, err := stream.Recv()

@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"testing"
@@ -41,6 +42,29 @@ func TestClientCreatePerson(t *testing.T) {
 	require.Equal(t, other.Id, res.PersonId)
 
 	requireSamePerson(t, person, other)
+}
+
+func TestClientSearchPerson(t *testing.T) {
+	t.Parallel()
+
+	_, address := startTestPersonServer(t)
+	personClient := newTestPersonClient(t, address)
+	req := &pb.SearchPersonRequest{
+		Filter: &pb.Filter{
+			Brand: "LACOSTE",
+		},
+	}
+	stream, err := personClient.SearchPerson(context.Background(), req)
+	require.NoError(t, err)
+
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			log.Print("eof")
+			break
+		}
+		require.NoError(t, err)
+	}
 }
 
 func TestClientUploadImage(t *testing.T) {
