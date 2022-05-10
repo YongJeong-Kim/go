@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/jinzhu/copier"
@@ -14,7 +15,7 @@ var ErrAlreadyExists = errors.New("already exists person")
 type PersonStore interface {
 	Save(person *pb.Person) error
 	Find(id string) (*pb.Person, error)
-	Search(filter *pb.Filter, found func(person *pb.Person) error) error
+	Search(ctx context.Context, filter *pb.Filter, found func(person *pb.Person) error) error
 }
 
 type InMemoryPersonStore struct {
@@ -57,11 +58,20 @@ func (store *InMemoryPersonStore) Find(id string) (*pb.Person, error) {
 	}
 }
 
-func (store *InMemoryPersonStore) Search(filter *pb.Filter, found func(person *pb.Person) error) error {
+func (store *InMemoryPersonStore) Search(
+	ctx context.Context,
+	filter *pb.Filter,
+	found func(person *pb.Person) error,
+) error {
 	store.mutex.RLock()
 	defer store.mutex.RUnlock()
 
 	for _, person := range store.data {
+		if ctx.Err() == context.Canceled || ctx.Err() == context.DeadlineExceeded {
+			log.Print("context cancelled or deadline exceeded")
+			return nil
+		}
+
 		log.Print("filter brand:", filter.Brand)
 		log.Print("person shirt brand:", person.Shirt.Brand)
 		if filter.Brand == person.Shirt.Brand {
