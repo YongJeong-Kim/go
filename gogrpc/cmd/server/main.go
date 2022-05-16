@@ -15,8 +15,11 @@ func main() {
 	flag.Parse()
 
 	personServer := service.NewPersonServer(service.NewInMemoryPersonStore())
+	shirtServer := service.NewShirtServer()
+	go shirtServer.ChannelReceiver()
 	grpcServer := grpc.NewServer()
 	pb.RegisterPersonServiceServer(grpcServer, personServer)
+	pb.RegisterShirtServiceServer(grpcServer, shirtServer)
 
 	address := fmt.Sprintf("0.0.0.0:%d", *port)
 	listener, err := net.Listen("tcp", address)

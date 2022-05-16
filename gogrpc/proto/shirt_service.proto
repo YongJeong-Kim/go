@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./pb";
+
+import "shirt_message.proto";
+
+message ShirtRequest {
+  Shirt shirt = 1;
+}
+
+message ShirtResponse {
+  Shirt shirt = 1;
+}
+
+service ShirtService {
+  rpc Broadcast(stream ShirtRequest) returns(stream ShirtResponse) {};
+}
