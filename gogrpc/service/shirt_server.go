@@ -41,7 +41,7 @@ func (s *ShirtServer) Subscribe() chan interface{} {
 
 func (s *ShirtServer) Unsubscribe(msgCh chan interface{}) {
 	s.unsubCh <- msgCh
-	close(msgCh)
+	//close(msgCh)
 }
 
 func (s *ShirtServer) Broadcast(stream pb.ShirtService_BroadcastServer) error {
@@ -64,11 +64,26 @@ func (s *ShirtServer) Broadcast(stream pb.ShirtService_BroadcastServer) error {
 			}); err != nil {
 				log.Println("subs event failed. ", err)
 			}
+			go func(st pb.ShirtService_BroadcastServer) {
+				select {
+				case <-st.Context().Done():
+					err := st.Context().Err()
+					switch err {
+					case context.Canceled:
+						log.Println("sub canceled")
+						//s.errCh <- status.Errorf(codes.Canceled, "canceledddd")
+						//s.Unsubscribe(sCh)
+					default:
+						log.Println("done")
+					}
+				}
+			}(stream)
+
 			go func() {
 				log.Println("in case subs")
 				subCh := s.Subscribe()
 
-				go func(st pb.ShirtService_BroadcastServer, sCh chan interface{}) {
+				/*go func(st pb.ShirtService_BroadcastServer, sCh chan interface{}) {
 					select {
 					case <-st.Context().Done():
 						err := st.Context().Err()
@@ -81,7 +96,7 @@ func (s *ShirtServer) Broadcast(stream pb.ShirtService_BroadcastServer) error {
 							log.Println("done")
 						}
 					}
-				}(stream, subCh)
+				}(stream, subCh)*/
 
 				st := <-subCh
 				log.Println("in case subs before send")
@@ -98,8 +113,6 @@ func (s *ShirtServer) Broadcast(stream pb.ShirtService_BroadcastServer) error {
 				}
 			}()
 		case "Publish":
-			s.Publish(res.GetShirt().GetBrand())
-
 			go func(st pb.ShirtService_BroadcastServer) {
 				select {
 				case <-st.Context().Done():
@@ -113,6 +126,7 @@ func (s *ShirtServer) Broadcast(stream pb.ShirtService_BroadcastServer) error {
 					}
 				}
 			}(stream)
+			s.Publish(res.GetShirt().GetBrand())
 		case "Unsubscribe":
 
 		case "Only":
@@ -146,13 +160,14 @@ func (s *ShirtServer) ChannelReceiver() error {
 
 				select {
 				case msgCh <- msg:
-					log.Println("sec: ", msgCh)
-					(<-msgCh).(pb.ShirtService_BroadcastServer).Send(&pb.ShirtResponse{
+					log.Println("sec: ", msgCh, msg)
+					/*(<-msgCh).(pb.ShirtService_BroadcastServer).Send(&pb.ShirtResponse{
 						Shirt: &pb.Shirt{
 							Brand: msg.(string),
 						},
 					},
-					)
+					)*/
+					log.Println(subs)
 				default:
 					log.Println("dfeault")
 				}
