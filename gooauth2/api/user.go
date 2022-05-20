@@ -61,8 +61,10 @@ func getOAuth2Info(platform string) (AuthInfo, error) {
 		authInfo = AuthInfo{
 			platform: "google",
 			OAuth2Config: &oauth2.Config{
-				ClientID:     "<GOOGLE_CLIENT_ID>",
-				ClientSecret: "<GOOGLE_CLIENT_SECRET>",
+				//ClientID:     "<GOOGLE_CLIENT_ID>",
+				ClientID: "118399467217-h6aj2r1i0hciv6r08iqv4k1d7jujvsps.apps.googleusercontent.com",
+				//ClientSecret: "<GOOGLE_CLIENT_SECRET>",
+				ClientSecret: "cPLW30VEkDCJZNJHqk6w62Za",
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://accounts.google.com/o/oauth2/auth",
 					TokenURL: "https://oauth2.googleapis.com/token",
@@ -384,4 +386,10 @@ func (server *Server) getState(key string) error {
 	_, err := server.redisClient.Get(ctx, key).Result()
 
 	return err
+}
+
+func (server *Server) checkCodeState(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"msg": "adad",
+	})
 }

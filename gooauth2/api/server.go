@@ -47,6 +47,7 @@ func (server *Server) setupRouter() {
 
 	router.POST("/login", server.Login)
 	router.POST("/token/refresh", server.refreshToken)
+	router.POST("/auth/check/google", server.checkCodeState)
 	router.GET("/test", func(c *gin.Context) {
 		c.SetCookie("aaa", "vxcv", 60*60*24, "/test", "/", true, true)
 		c.JSON(http.StatusOK, gin.H{
