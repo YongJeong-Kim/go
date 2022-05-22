@@ -23,6 +23,8 @@ type User struct {
 	Username string `json:"username"`
 }
 
+type Request
+
 type AuthInfo struct {
 	platform     string
 	OAuth2Config *oauth2.Config
@@ -389,6 +391,7 @@ func (server *Server) getState(key string) error {
 }
 
 func (server *Server) checkCodeState(c *gin.Context) {
+	var
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "adad",
 	})

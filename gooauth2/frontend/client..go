@@ -99,14 +99,30 @@ func main() {
 */
 
 func loginCallback(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"msg": "ok",
-	})
+	state := c.Request.FormValue("state")
+	code := c.Request.FormValue("code")
+	body := gin.H{
+		"state": state,
+		"code":  code,
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		log.Fatal("marshal failed. ", err)
+	}
+	url := "http://localhost:8090/"
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+	if err != nil {
+		log.Fatal("request failed. ", err)
+	}
+	client := http.Client{}
+	res, err := client.Do(req)
+
+	c.JSON(http.StatusOK, res)
 }
 
 func checkCodeState(c *gin.Context) {
 	body := gin.H{
-		"code": "",
+		"code":  "",
 		"state": "",
 	}
 	data, err := json.Marshal(body)
@@ -118,7 +134,7 @@ func checkCodeState(c *gin.Context) {
 	reqURL := "http://localhost:8090/auth/check/google"
 	req, err := http.NewRequest(http.MethodPost, reqURL, bytes.NewReader(data))
 	if err != nil {
-		return 
+		return
 	}
 	log.Println(req)
 
@@ -149,4 +165,6 @@ func checkCodeState(c *gin.Context) {
 		return
 	}
 	log.Println(profile)
+
+	c.JSON(http.StatusOK, profile)
 }

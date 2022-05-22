@@ -14,7 +14,7 @@ func main() {
 
 	server, err := api.NewServer(cfg)
 	if err != nil {
-		log.Fatal("cannot create new server.")
+		log.Fatal("cannot create new server. ", err)
 	}
 
 	err = server.Start(cfg.ServerAddress)
