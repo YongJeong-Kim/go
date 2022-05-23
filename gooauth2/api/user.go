@@ -23,8 +23,6 @@ type User struct {
 	Username string `json:"username"`
 }
 
-type Request
-
 type AuthInfo struct {
 	platform     string
 	OAuth2Config *oauth2.Config
@@ -63,10 +61,8 @@ func getOAuth2Info(platform string) (AuthInfo, error) {
 		authInfo = AuthInfo{
 			platform: "google",
 			OAuth2Config: &oauth2.Config{
-				//ClientID:     "<GOOGLE_CLIENT_ID>",
-				ClientID: "118399467217-h6aj2r1i0hciv6r08iqv4k1d7jujvsps.apps.googleusercontent.com",
-				//ClientSecret: "<GOOGLE_CLIENT_SECRET>",
-				ClientSecret: "cPLW30VEkDCJZNJHqk6w62Za",
+				ClientID:     "<GOOGLE_CLIENT_ID>",
+				ClientSecret: "<GOOGLE_CLIENT_SECRET>",
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://accounts.google.com/o/oauth2/auth",
 					TokenURL: "https://oauth2.googleapis.com/token",
@@ -221,6 +217,25 @@ func (server *Server) oauth2Callback(c *gin.Context) {
 		return
 	}
 
+	tokenDuration := token.JWTDuration{
+		AccessTokenDuration:  server.config.AccessTokenDuration,
+		RefreshTokenDuration: server.config.RefreshTokenDuration,
+	}
+
+	tokenDetails, err := server.maker.CreateToken(profile["email"].(string), tokenDuration)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	err = server.CreateAuth(profile["id"].(string), tokenDetails)
+	if err != nil {
+		c.JSON(http.StatusUnprocessableEntity, err.Error())
+		return
+	}
+
+	profile["access_token"] = tokenDetails.Token["access_token"]
+	profile["refresh_token"] = tokenDetails.Token["refresh_token"]
 	c.JSON(http.StatusOK, profile)
 	//c.Data(http.StatusOK, "application/json", content)
 	//fmt.Fprintf(ctx.Writer, "Response: %s", content)
@@ -390,8 +405,17 @@ func (server *Server) getState(key string) error {
 	return err
 }
 
-func (server *Server) checkCodeState(c *gin.Context) {
-	var
+func (server *Server) checkState(c *gin.Context) {
+	//code := c.Request.FormValue("code")
+	state := c.Request.FormValue("state")
+
+	err := server.getState(state)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "Invalid State",
+		})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"msg": "adad",
 	})
