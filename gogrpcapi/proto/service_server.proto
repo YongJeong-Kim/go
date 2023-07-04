@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+import "user_message.proto";
+
+service Server {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+
+  }
+}

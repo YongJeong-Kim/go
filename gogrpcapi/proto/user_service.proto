@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+option go_package = "./pb";
+
+import "user_message.proto";
+
+message CreateUserRequest {
+  User user = 1;
+}
+
+message CreateUserResponse {
+  string user_id = 1;
+}
+service UserService {
+
+}
