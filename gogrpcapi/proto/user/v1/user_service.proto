@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package user.v1;
+
+import "google/api/annotations.proto";
+import "user/v1/user_message.proto";
+
+option go_package = "./userv1";
+
+message CreateUserRequest {
+  User user = 1;
+}
+
+message CreateUserResponse {
+  string user_id = 1;
+}
+
+message DeleteUserRequest {
+  User user = 1;
+}
+
+message DeleteUserResponse {
+  string user_id = 1;
+}
+
+service SimpleServer {
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "*"
+    };
+  }
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse) {
+    option (google.api.http) = {
+      delete: "/v1/users"
+      body: "*"
+    };
+  }
+}

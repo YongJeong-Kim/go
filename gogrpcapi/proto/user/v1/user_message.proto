@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-option go_package = "./pb";
+package user.v1;
 
-package pb;
+option go_package = "./userv1";
 
 message User {
   string name = 1;
