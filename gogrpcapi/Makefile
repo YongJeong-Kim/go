@@ -9,7 +9,7 @@
 gen:
 	buf generate proto
 
-clean:
+clear:
 	rmdir /S /Q pb
 
 server:
