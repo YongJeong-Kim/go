@@ -12,11 +12,13 @@ gen:
 clear:
 	rmdir /S /Q pb
 
-server:
-	go run cmd/server/main.go -port 8080
+mock:
+	mockgen -package accountv1mock -destination pb/account/v1/mock/account_service_grpc_mock.go github.com/YongJeong-Kim/go/gogrpcapi/pb/account/v1 AccountServiceServer
 
 test:
 	go test -cover ./...
+
+
 
 # Linux
 #gen:

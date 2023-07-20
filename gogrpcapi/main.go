@@ -15,12 +15,12 @@ import (
 	"net/http"
 )
 
-func registerService(grpcServer *grpc.Server, server *gapi.Server) {
+func RegisterService(grpcServer *grpc.Server, server *gapi.Server) {
 	accountv1.RegisterAccountServiceServer(grpcServer, server)
 	userv1.RegisterSimpleServerServer(grpcServer, server)
 }
 
-func registerHandlerServer(ctx context.Context, grpcMux *runtime.ServeMux, server *gapi.Server) error {
+func RegisterHandlerServer(ctx context.Context, grpcMux *runtime.ServeMux, server *gapi.Server) error {
 	register := func(errs ...error) error {
 		for _, err := range errs {
 			if err != nil {
@@ -40,7 +40,7 @@ func main() {
 	server := gapi.NewServer()
 	grpcServer := grpc.NewServer()
 
-	registerService(grpcServer, server)
+	RegisterService(grpcServer, server)
 	reflection.Register(grpcServer)
 
 	listener, err := net.Listen("tcp", "0.0.0.0:9090")
@@ -48,7 +48,7 @@ func main() {
 		log.Fatal("cannot create listener")
 	}
 
-	go runGatewayServer()
+	go RunGatewayServer()
 
 	log.Printf("start grpc server at %s", listener.Addr().String())
 	err = grpcServer.Serve(listener)
@@ -57,7 +57,7 @@ func main() {
 	}
 }
 
-func runGatewayServer() {
+func RunGatewayServer() {
 	server := gapi.NewServer()
 
 	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
@@ -74,7 +74,7 @@ func runGatewayServer() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := registerHandlerServer(ctx, grpcMux, server)
+	err := RegisterHandlerServer(ctx, grpcMux, server)
 	if err != nil {
 		log.Fatal("cannot register handler server", err)
 	}
