@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type SimpleServerClient interface {
 	CreateUser(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
+	//  rpc UploadUser(UploadUserRequest) returns (google.protobuf.Empty) {
+	UploadUser(ctx context.Context, in *UploadUserRequest, opts ...grpc.CallOption) (*UploadUserResponse, error)
 }
 
 type simpleServerClient struct {
@@ -52,12 +54,23 @@ func (c *simpleServerClient) DeleteUser(ctx context.Context, in *DeleteUserReque
 	return out, nil
 }
 
+func (c *simpleServerClient) UploadUser(ctx context.Context, in *UploadUserRequest, opts ...grpc.CallOption) (*UploadUserResponse, error) {
+	out := new(UploadUserResponse)
+	err := c.cc.Invoke(ctx, "/user.v1.SimpleServer/UploadUser", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SimpleServerServer is the server API for SimpleServer service.
 // All implementations must embed UnimplementedSimpleServerServer
 // for forward compatibility
 type SimpleServerServer interface {
 	CreateUser(context.Context, *CreateUserRequest) (*CreateUserResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
+	//  rpc UploadUser(UploadUserRequest) returns (google.protobuf.Empty) {
+	UploadUser(context.Context, *UploadUserRequest) (*UploadUserResponse, error)
 	mustEmbedUnimplementedSimpleServerServer()
 }
 
@@ -70,6 +83,9 @@ func (UnimplementedSimpleServerServer) CreateUser(context.Context, *CreateUserRe
 }
 func (UnimplementedSimpleServerServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedSimpleServerServer) UploadUser(context.Context, *UploadUserRequest) (*UploadUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UploadUser not implemented")
 }
 func (UnimplementedSimpleServerServer) mustEmbedUnimplementedSimpleServerServer() {}
 
@@ -120,6 +136,24 @@ func _SimpleServer_DeleteUser_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SimpleServer_UploadUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SimpleServerServer).UploadUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.v1.SimpleServer/UploadUser",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SimpleServerServer).UploadUser(ctx, req.(*UploadUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SimpleServer_ServiceDesc is the grpc.ServiceDesc for SimpleServer service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -134,6 +168,10 @@ var SimpleServer_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteUser",
 			Handler:    _SimpleServer_DeleteUser_Handler,
+		},
+		{
+			MethodName: "UploadUser",
+			Handler:    _SimpleServer_UploadUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

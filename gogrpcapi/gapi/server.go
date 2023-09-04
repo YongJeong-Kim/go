@@ -4,6 +4,9 @@ import (
 	"context"
 	accountv1 "gogrpcapi/pb/account/v1"
 	userv1 "gogrpcapi/pb/user/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"log"
 )
 
 type Server struct {
@@ -36,5 +39,13 @@ func (server *Server) CreateAccount(ctx context.Context, req *accountv1.CreateAc
 		Account: &accountv1.Account{
 			AccountId: "dvdvdv",
 		},
+	}, nil
+}
+
+func (server *Server) UploadUser(ctx context.Context, req *userv1.UploadUserRequest) (*userv1.UploadUserResponse, error) {
+	log.Println(req)
+	_ = grpc.SetHeader(ctx, metadata.Pairs("x-http-code", "201"))
+	return &userv1.UploadUserResponse{
+		Id: "2eeeee",
 	}, nil
 }

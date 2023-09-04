@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package user.v1;
 
+import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
 import "user/v1/user_message.proto";
 
 option go_package = "./userv1";
@@ -23,6 +25,14 @@ message DeleteUserResponse {
   string user_id = 1;
 }
 
+message UploadUserRequest {
+  string id = 1;
+}
+
+message UploadUserResponse {
+  string id = 1;
+}
+
 service SimpleServer {
   rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
     option (google.api.http) = {
@@ -34,6 +44,12 @@ service SimpleServer {
     option (google.api.http) = {
       delete: "/v1/users"
       body: "*"
+    };
+  }
+//  rpc UploadUser(UploadUserRequest) returns (google.protobuf.Empty) {
+  rpc UploadUser(UploadUserRequest) returns (UploadUserResponse) {
+    option (google.api.http) = {
+      put: "/v1/images/{id}"
     };
   }
 }

@@ -1,6 +1,8 @@
 package gapi
 
 import (
+	"context"
+	"google.golang.org/grpc"
 	"log"
 	"net/http"
 	"time"
@@ -46,4 +48,12 @@ func HTTPLogger(handler http.Handler) http.Handler {
 		//	Dur("duration", duration).
 		//	Msg("received a HTTP request")
 	})
+}
+
+func GRPCLogger(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+	startTime := time.Now()
+	result, err := handler(ctx, req)
+	duration := time.Since(startTime)
+	log.Println("grpc duration:", duration)
+	return result, err
 }
