@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/selector"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"gogrpcapi/gapi"
 	accountv1 "gogrpcapi/pb/account/v1"
 	userv1 "gogrpcapi/pb/user/v1"
+	"gogrpcapi/token"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -45,50 +45,109 @@ func RegisterHandlerServer(ctx context.Context, grpcMux *runtime.ServeMux, serve
 }
 
 func main() {
-	authFn := func(ctx context.Context) (context.Context, error) {
-		token, err := auth.AuthFromMD(ctx, "bearer")
-		if err != nil {
-			return nil, err
-		}
-		// TODO: This is example only, perform proper Oauth/OIDC verification!
-		if token != "yolo" {
-			return nil, status.Error(codes.Unauthenticated, "invalid auth token")
-		}
-		// NOTE: You can also pass the token in the context for further interceptors or gRPC service code.
-		return ctx, nil
-	}
-
-	allButHealthZ := func(ctx context.Context, callMeta interceptors.CallMeta) bool {
-		return userv1.SimpleServer_ServiceDesc.ServiceName != callMeta.Service
-		//return healthpb.Health_ServiceDesc.ServiceName != callMeta.Service
-	}
-
-	server := gapi.NewServer()
-	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(
-			selector.UnaryServerInterceptor(auth.UnaryServerInterceptor(authFn), selector.MatchFunc(allButHealthZ)),
-		),
-	)
-
-	RegisterService(grpcServer, server)
-	reflection.Register(grpcServer)
-
-	listener, err := net.Listen("tcp", "0.0.0.0:19090")
-	if err != nil {
-		log.Fatal("cannot create listener", err)
-	}
+	//authFn := func(ctx context.Context) (context.Context, error) {
+	//	token, err := auth.AuthFromMD(ctx, "bearer")
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//	// TODO: This is example only, perform proper Oauth/OIDC verification!
+	//	if token != "yolo" {
+	//		return nil, status.Error(codes.Unauthenticated, "invalid auth token")
+	//	}
+	//	// NOTE: You can also pass the token in the context for further interceptors or gRPC service code.
+	//	return ctx, nil
+	//}
+	//
+	//allButHealthZ := func(ctx context.Context, callMeta interceptors.CallMeta) bool {
+	//	return userv1.SimpleServer_ServiceDesc.ServiceName != callMeta.Service
+	//	//return healthpb.Health_ServiceDesc.ServiceName != callMeta.Service
+	//}
+	//
+	//tokenMaker, err := token.NewJWTMaker("qidfjfiekwhigfvcdsxzaqwer45t6y7u8ijhnbvfcdx")
+	//if err != nil {
+	//	log.Fatal("create token maker failed", err)
+	//}
+	//server := gapi.NewServer(tokenMaker)
+	//grpcServer := grpc.NewServer(
+	//	grpc.ChainUnaryInterceptor(
+	//		selector.UnaryServerInterceptor(auth.UnaryServerInterceptor(authFn), selector.MatchFunc(allButHealthZ)),
+	//	),
+	//)
+	//
+	//RegisterService(grpcServer, server)
+	//reflection.Register(grpcServer)
+	//
+	//listener, err := net.Listen("tcp", "0.0.0.0:19090")
+	//if err != nil {
+	//	log.Fatal("cannot create listener", err)
+	//}
+	//
+	//go RunGatewayServer()
+	//
+	//log.Printf("start grpc server at %s", listener.Addr().String())
+	//err = grpcServer.Serve(listener)
+	//if err != nil {
+	//	log.Fatal("cannot start grpc server")
+	//}
 
 	go RunGatewayServer()
+	runGRPCServer()
+}
 
-	log.Printf("start grpc server at %s", listener.Addr().String())
+func parseToken(token string) (struct{}, error) {
+	return struct{}{}, nil
+}
+func userClaimFromToken(struct{}) string {
+	return "foobar"
+}
+
+var tokenInfoKey struct{}
+
+func exampleAuthFunc(ctx context.Context) (context.Context, error) {
+	token, err := auth.AuthFromMD(ctx, "bearer")
+	if err != nil {
+		return nil, err
+	}
+
+	tokenInfo, err := parseToken(token)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
+	}
+
+	ctx = logging.InjectFields(ctx, logging.Fields{"auth.sub", userClaimFromToken(tokenInfo)})
+
+	// WARNING: In production define your own type to avoid context collisions.
+	return context.WithValue(ctx, tokenInfoKey, tokenInfo), nil
+}
+
+func runGRPCServer() {
+	tokenMaker, err := token.NewJWTMaker("qidfjfiekwhigfvcdsxzaqwer45t6y7u8ijhnbvfcdx")
+	if err != nil {
+		log.Fatal("create token maker failed", err)
+	}
+	server := gapi.NewServer(tokenMaker)
+	grpcServer := grpc.NewServer(
+
+		grpc.UnaryInterceptor(auth.UnaryServerInterceptor(exampleAuthFunc)),
+	)
+	RegisterService(grpcServer, server)
+	reflection.Register(grpcServer)
+	listener, err := net.Listen("tcp", "0.0.0.0:19090")
+	if err != nil {
+		log.Fatal("create listener failed.", err)
+	}
 	err = grpcServer.Serve(listener)
 	if err != nil {
-		log.Fatal("cannot start grpc server")
+		log.Fatal("serve failed.", err)
 	}
 }
 
 func RunGatewayServer() {
-	server := gapi.NewServer()
+	tokenMaker, err := token.NewJWTMaker("qidfjfiekwhigfvcdsxzaqwer45t6y7u8ijhnbvfcdx")
+	if err != nil {
+		log.Fatal("create token maker failed", err)
+	}
+	server := gapi.NewServer(tokenMaker)
 
 	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 		MarshalOptions: protojson.MarshalOptions{
@@ -105,12 +164,21 @@ func RunGatewayServer() {
 		runtime.WithIncomingHeaderMatcher(incomingHeaderMatcher),
 		runtime.WithMetadata(metadataMatcher),
 		runtime.WithOutgoingHeaderMatcher(headerMatcher),
+		runtime.WithErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
+			//creating a new HTTTPStatusError with a custom status, and passing error
+			newError := runtime.HTTPStatusError{
+				HTTPStatus: 400,
+				Err:        err,
+			}
+			// using default handler to do the rest of heavy lifting of marshaling error and adding headers
+			runtime.DefaultHTTPErrorHandler(ctx, mux, marshaler, writer, request, &newError)
+		}),
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := RegisterHandlerServer(ctx, grpcMux, server)
+	err = RegisterHandlerServer(ctx, grpcMux, server)
 	if err != nil {
 		log.Fatal("cannot register handler server", err)
 	}
@@ -123,10 +191,10 @@ func RunGatewayServer() {
 		log.Fatal("cannot create listener", err)
 	}
 
-	handler := gapi.HTTPLogger(mux)
-	log.Println("start http gateway server at", listener.Addr().String())
+	//handler := gapi.HTTPLogger(mux)
+	//log.Println("start http gateway server at", listener.Addr().String())
 
-	err = http.Serve(listener, handler)
+	err = http.Serve(listener, mux)
 	if err != nil {
 		log.Fatal("cannot start HTTP gateway server")
 	}

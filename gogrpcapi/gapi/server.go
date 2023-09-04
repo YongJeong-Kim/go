@@ -4,6 +4,7 @@ import (
 	"context"
 	accountv1 "gogrpcapi/pb/account/v1"
 	userv1 "gogrpcapi/pb/user/v1"
+	"gogrpcapi/token"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"log"
@@ -11,6 +12,7 @@ import (
 
 type Server struct {
 	UnimplementedServer
+	tokenMaker token.Maker
 }
 
 type UnimplementedServer struct {
@@ -18,8 +20,10 @@ type UnimplementedServer struct {
 	userv1.UnimplementedSimpleServerServer
 }
 
-func NewServer() *Server {
-	return &Server{}
+func NewServer(tokenMaker token.Maker) *Server {
+	return &Server{
+		tokenMaker: tokenMaker,
+	}
 }
 
 func (server *Server) CreateUser(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
