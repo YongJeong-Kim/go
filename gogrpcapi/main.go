@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
@@ -121,7 +122,7 @@ func exampleAuthFunc(ctx context.Context) (context.Context, error) {
 }
 
 func runGRPCServer() {
-	tokenMaker, err := token.NewJWTMaker("qidfjfiekwhigfvcdsxzaqwer45t6y7u8ijhnbvfcdx")
+	tokenMaker, err := token.NewJWTMaker("vDeow21qdQdnO4hPf82xFCd183DbtUos8v4EgY910Uh")
 	if err != nil {
 		log.Fatal("create token maker failed", err)
 	}
@@ -143,7 +144,7 @@ func runGRPCServer() {
 }
 
 func RunGatewayServer() {
-	tokenMaker, err := token.NewJWTMaker("qidfjfiekwhigfvcdsxzaqwer45t6y7u8ijhnbvfcdx")
+	tokenMaker, err := token.NewJWTMaker("vDeow21qdQdnO4hPf82xFCd183DbtUos8v4EgY910Uh")
 	if err != nil {
 		log.Fatal("create token maker failed", err)
 	}
@@ -183,21 +184,30 @@ func RunGatewayServer() {
 		log.Fatal("cannot register handler server", err)
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", grpcMux)
-
-	listener, err := net.Listen("tcp", "0.0.0.0:8080")
-	if err != nil {
-		log.Fatal("cannot create listener", err)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: server.GetRouter(grpcMux, tokenMaker),
 	}
 
-	//handler := gapi.HTTPLogger(mux)
-	//log.Println("start http gateway server at", listener.Addr().String())
-
-	err = http.Serve(listener, mux)
-	if err != nil {
-		log.Fatal("cannot start HTTP gateway server")
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("listen: %s\n", err)
 	}
+
+	//mux := http.NewServeMux()
+	//mux.Handle("/", grpcMux)
+	//
+	//listener, err := net.Listen("tcp", "0.0.0.0:8080")
+	//if err != nil {
+	//	log.Fatal("cannot create listener", err)
+	//}
+	//
+	////handler := gapi.HTTPLogger(mux)
+	////log.Println("start http gateway server at", listener.Addr().String())
+	//
+	//err = http.Serve(listener, mux)
+	//if err != nil {
+	//	log.Fatal("cannot start HTTP gateway server")
+	//}
 }
 
 func httpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {

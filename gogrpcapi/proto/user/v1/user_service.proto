@@ -4,7 +4,6 @@ package user.v1;
 
 import "google/protobuf/empty.proto";
 import "google/api/annotations.proto";
-import "protoc-gen-openapiv2/options/annotations.proto";
 import "user/v1/user_message.proto";
 
 option go_package = "./userv1";

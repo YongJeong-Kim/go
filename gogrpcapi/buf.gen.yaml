@@ -13,8 +13,8 @@ plugins:
     opt:
       - paths=source_relative
       - allow_delete_body=true
-  - name: openapiv2
-    out: pb
-    opt:
-      - disable_default_responses=true
-      - allow_delete_body=true
+#  - name: openapiv2
+#    out: pb
+#    opt:
+#      - disable_default_responses=true
+#      - allow_delete_body=true
