@@ -1,0 +1,4 @@
+CREATE TABLE user (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name varchar(20)
+);
