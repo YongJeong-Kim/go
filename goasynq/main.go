@@ -1,58 +1,65 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
+	"errors"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
 	"goasynq/api"
 	"goasynq/service"
+	"goasynq/worker"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
-const redisAddr = "127.0.0.1:16379"
+const (
+	mysqlSource = "root:1234@tcp(localhost:13306)/test?parseTime=true"
+	redisAddr   = "127.0.0.1:16379"
+)
 
 func main() {
-	//srv := asynq.NewServer(
-	//	asynq.RedisClientOpt{Addr: redisAddr},
-	//	asynq.Config{
-	//		// Specify how many concurrent workers to use
-	//		Concurrency: 10,
-	//		// Optionally specify multiple queues with different priority.
-	//		Queues: map[string]int{
-	//			"critical": 6,
-	//			"default":  3,
-	//			"low":      1,
-	//		},
-	//		// See the godoc for other configuration options
-	//	},
-	//)
-	//
-	//// mux maps a type to a handler
-	//mux := asynq.NewServeMux()
-	//mux.HandleFunc(tasks.TypeEmailDelivery, tasks.HandleEmailDeliveryTask)
-	//mux.Handle(tasks.TypeImageResize, tasks.NewImageProcessor())
-	//// ...register other handlers...
-	//
-	//if err := srv.Run(mux); err != nil {
-	//	log.Fatalf("could not run server: %v", err)
-	//}
-
-	go api.NewTaskServer()
-
-	conn, err := sqlx.Connect("mysql", "root:1234@tcp(localhost:13306)/test?parseTime=true")
+	conn, err := sqlx.Connect("mysql", mysqlSource)
 	if err != nil {
 		log.Fatal("connect db failed: ", err)
 	}
 
 	service := service.NewService(conn)
-	asynqclient := asynq.NewClient(asynq.RedisClientOpt{Addr: "localhost:16379"})
+	asynqclient := asynq.NewClient(asynq.RedisClientOpt{Addr: redisAddr})
+	//taskLog := worker.NewTaskLog()
 	server := api.NewServer(service, asynqclient)
+	server.SetupRouter()
 
-	r := gin.New()
-	r.GET("/test", server.CreateUser)
-	err = r.Run(":8080")
-	if err != nil {
-		log.Fatal("run server failed:", err)
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: server.Router,
 	}
+
+	go worker.NewTaskServer()
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("listen: %s\n", err)
+		}
+	}()
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	// catching ctx.Done(). timeout of 5 seconds.
+	select {
+	case <-ctx.Done():
+		log.Println("timeout of 5 seconds.")
+	}
+	log.Println("Server exiting")
 }

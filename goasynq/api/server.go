@@ -6,7 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
 	"goasynq/service"
-	"goasynq/tasks"
 	"goasynq/worker"
 	"log"
 	"net/http"
@@ -15,18 +14,28 @@ import (
 type Server struct {
 	Service     service.Servicer
 	AsynqClient *asynq.Client
+	Router      *gin.Engine
+	//TaskLog     worker.TaskLogger
 }
 
-func NewServer(service service.Servicer, asynqClient *asynq.Client) *Server {
+func NewServer(
+	service service.Servicer,
+	asynqClient *asynq.Client,
+	// taskLog worker.TaskLogger,
+) *Server {
 	return &Server{
 		Service:     service,
 		AsynqClient: asynqClient,
+		//TaskLog:     taskLog,
 	}
 }
 
-const (
-	TaskTest = "task:test"
-)
+func (server *Server) SetupRouter() {
+	r := gin.New()
+	r.GET("/test", server.CreateUser)
+
+	server.Router = r
+}
 
 func (server *Server) CreateUser(c *gin.Context) {
 	name := "asdf"
@@ -40,7 +49,7 @@ func (server *Server) CreateUser(c *gin.Context) {
 				log.Fatal(err)
 			}
 
-			task := asynq.NewTask(TaskTest, payload, nil)
+			task := asynq.NewTask(worker.TaskTest, payload, nil)
 			info, err := server.AsynqClient.EnqueueContext(c, task)
 			if err != nil {
 				log.Fatal(err)
@@ -54,30 +63,4 @@ func (server *Server) CreateUser(c *gin.Context) {
 		return
 	}
 	c.Status(http.StatusOK)
-}
-
-func NewTaskServer() {
-	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: "localhost:16379"},
-		asynq.Config{
-			// Specify how many concurrent workers to use
-			Concurrency: 10,
-			// Optionally specify multiple queues with different priority.
-			Queues: map[string]int{
-				"critical": 6,
-				"default":  3,
-				"low":      1,
-			},
-			// See the godoc for other configuration options
-		},
-	)
-
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(TaskTest, worker.CreateUserTask)
-	mux.Handle(tasks.TypeImageResize, tasks.NewImageProcessor())
-	// ...register other handlers...
-
-	if err := srv.Run(mux); err != nil {
-		log.Fatalf("could not run server: %v", err)
-	}
 }
