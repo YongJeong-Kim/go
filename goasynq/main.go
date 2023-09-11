@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/YongJeong-Kim/go/goasynq/api"
+	"github.com/YongJeong-Kim/go/goasynq/service"
+	"github.com/YongJeong-Kim/go/goasynq/worker"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
-	"goasynq/api"
-	"goasynq/service"
-	"goasynq/worker"
 	"log"
 	"net/http"
 	"os"
@@ -23,15 +23,19 @@ const (
 )
 
 func main() {
-	conn, err := sqlx.Connect("mysql", mysqlSource)
+	conn, err := GetConnection()
 	if err != nil {
 		log.Fatal("connect db failed: ", err)
 	}
 
 	service := service.NewService(conn)
-	asynqclient := asynq.NewClient(asynq.RedisClientOpt{Addr: redisAddr})
+	asynqClient := asynq.NewClient(asynq.RedisClientOpt{
+		Addr: redisAddr,
+		DB:   3,
+	})
+	taskDistributor := worker.NewTaskDistributor()
 	//taskLog := worker.NewTaskLog()
-	server := api.NewServer(service, asynqclient)
+	server := api.NewServer(service, asynqClient, taskDistributor)
 	server.SetupRouter()
 
 	srv := &http.Server{
@@ -39,7 +43,7 @@ func main() {
 		Handler: server.Router,
 	}
 
-	go worker.NewTaskServer()
+	go worker.NewTaskServer(server.TaskDistributor)
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %s\n", err)
@@ -62,4 +66,8 @@ func main() {
 		log.Println("timeout of 5 seconds.")
 	}
 	log.Println("Server exiting")
+}
+
+func GetConnection() (*sqlx.DB, error) {
+	return sqlx.Connect("mysql", mysqlSource)
 }

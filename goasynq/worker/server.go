@@ -2,8 +2,8 @@ package worker
 
 import (
 	"context"
+	"github.com/YongJeong-Kim/go/goasynq/tasks"
 	"github.com/hibiken/asynq"
-	"goasynq/tasks"
 	"log"
 )
 
@@ -11,7 +11,7 @@ const (
 	TaskTest = "task:test"
 )
 
-func NewTaskServer() {
+func NewTaskServer(t Distributor) {
 	//logger, _ := zap.NewProduction()
 	//defer logger.Sync()
 
@@ -35,7 +35,7 @@ func NewTaskServer() {
 	)
 
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(TaskTest, CreateUserTask)
+	mux.HandleFunc(TaskTest, t.CreateUserTask)
 	mux.Handle(tasks.TypeImageResize, tasks.NewImageProcessor())
 	// ...register other handlers...
 

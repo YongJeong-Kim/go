@@ -12,9 +12,9 @@ type CreateUserTaskPayload struct {
 	Name string
 }
 
-func CreateUserTask(ctx context.Context, t *asynq.Task) error {
+func (t *TaskDistributor) CreateUserTask(ctx context.Context, task *asynq.Task) error {
 	var p CreateUserTaskPayload
-	err := json.Unmarshal(t.Payload(), &p)
+	err := json.Unmarshal(task.Payload(), &p)
 	if err != nil {
 		return err
 	}
