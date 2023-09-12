@@ -31,7 +31,8 @@ func main() {
 	service := service.NewService(conn)
 	asynqClient := asynq.NewClient(asynq.RedisClientOpt{
 		Addr: redisAddr,
-		DB:   3,
+		// 0 only working
+		//DB:        0,
 	})
 	taskDistributor := worker.NewTaskDistributor()
 	//taskLog := worker.NewTaskLog()
@@ -43,7 +44,11 @@ func main() {
 		Handler: server.Router,
 	}
 
-	go worker.NewTaskServer(server.TaskDistributor)
+	taskServer := worker.NewTaskServer(server.TaskDistributor)
+	taskServer.SetupTaskServer()
+	taskServer.SetupServeMux()
+	go taskServer.RunTaskServer()
+
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("listen: %s\n", err)

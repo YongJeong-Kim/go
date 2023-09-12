@@ -26,10 +26,11 @@ func (server *Server) CreateUser(c *gin.Context) {
 			opts := []asynq.Option{
 				asynq.MaxRetry(3),
 				asynq.ProcessIn(2 * time.Second),
+				asynq.Timeout(10 * time.Second),
 				asynq.Queue("critical"),
 			}
 
-			task := asynq.NewTask(worker.TaskTest, payload, opts...)
+			task := asynq.NewTask(worker.TaskUser, payload, opts...)
 			info, err := server.AsynqClient.EnqueueContext(c, task)
 			if err != nil {
 				log.Fatal(err)
