@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  lb:
+    image: haproxy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./haproxy:/usr/local/etc/haproxy
+
+  ws1:
+    build: .
+    environment:
+      - appID=aaa
+
+  ws2:
+    build: .
+    environment:
+      - appID=bbb
+
+  ws3:
+    build: .
+    environment:
+      - appID=ccc
+
+  redis:
+    image: redis
+    ports:
+      - "36379:6379"
