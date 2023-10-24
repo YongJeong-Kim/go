@@ -12,6 +12,9 @@ services:
     build: .
     environment:
       - appID=aaa
+#    deploy:
+#      mode: replicated
+#      replicas: 4
 
   ws2:
     build: .

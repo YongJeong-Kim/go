@@ -20,7 +20,7 @@ func NewServer(redis *redis.Client) *Server {
 }
 
 func (server *Server) Publish(msg string) {
-	err := server.redis.Publish(context.Background(), "channel1", "payload").Err()
+	err := server.redis.Publish(context.Background(), "channel1", msg).Err()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,24 +36,28 @@ func (server *Server) Subscribe() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("received: %s\n", msg)
+		log.Printf("received: %s\n", msg.Payload)
 	}
 }
 
 func main() {
 	redis := redis.NewClient(&redis.Options{
-		Addr:     "localhost:36379",
+		Addr:     "redis:6379",
 		Password: "",
 	})
 
 	server := NewServer(redis)
-
 	go server.Subscribe()
 
 	a := os.Getenv("aaa")
 	log.Println(a)
 
 	r := gin.New()
+	err := r.SetTrustedProxies(nil)
+	if err != nil {
+		log.Fatal("trusted proxies failed. ", err)
+	}
+
 	r.GET("/channel1/:msg", func(c *gin.Context) {
 		var req struct {
 			Msg string `uri:"msg"`
@@ -65,6 +69,7 @@ func main() {
 			return
 		}
 
+		log.Printf("channel1: %s\n", req.Msg)
 		server.Publish(req.Msg)
 		c.JSON(http.StatusOK, gin.H{
 			"ok": "ok",
