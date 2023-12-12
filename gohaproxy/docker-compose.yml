@@ -7,6 +7,10 @@ services:
       - "8080:8080"
     volumes:
       - ./haproxy:/usr/local/etc/haproxy
+    depends_on:
+      - ws1
+      - ws2
+      - ws3
 
   ws1:
     build: .
