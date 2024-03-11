@@ -1,0 +1,16 @@
+gateway:
+  listenAddr: localhost:38080
+  routes:
+    - name: account service
+      context: /account
+      version:
+        - v1
+        - v2
+      scheme: http
+      target: localhost:8080
+    - name: serviceB
+      context: /service-b
+      version:
+        - v1
+      scheme: http
+      target: localhost:8081
