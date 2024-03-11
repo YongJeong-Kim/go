@@ -2,8 +2,10 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/yongjeong-kim/go/goapigw/account/api"
+	"github.com/yongjeong-kim/go/goapigw/account/service"
+	"github.com/yongjeong-kim/go/goapigw/account/token"
 	"net/http"
-	"time"
 )
 
 const (
@@ -14,10 +16,12 @@ const (
 )
 
 func main() {
-	var maker TokenMaker = NewPasetoMaker()
-	accountServer := NewAccountServer(maker)
+	var maker token.TokenMaker = token.NewPasetoMaker()
+	var servicer service.AccountServicer = service.NewAccountService(maker)
+	accountServer := api.NewAccountServer(servicer)
+
 	r := gin.New()
-	r.POST(accountv1+"/login", accountServer.login)
+	r.POST(accountv1+"/login", accountServer.Login)
 	r.GET(accountv1+"/111", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"msg": "version 2 available now",
@@ -52,43 +56,4 @@ func main() {
 	})
 
 	r.Run(":8080")
-}
-
-type AccountServer struct {
-	Maker TokenMaker
-}
-
-func NewAccountServer(maker TokenMaker) *AccountServer {
-	return &AccountServer{
-		Maker: maker,
-	}
-}
-
-func (s *AccountServer) login(c *gin.Context) {
-	var req struct {
-		Username string `form:"username"`
-		Password string `form:"password"`
-	}
-	if err := c.ShouldBind(&req); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message":     "invalid username or password",
-			"status_code": http.StatusBadRequest,
-		})
-		return
-	}
-
-	if req.Username == "aaa" && req.Password == "1234" {
-
-	}
-	t, err := s.Maker.Create(req.Username, 10*time.Minute)
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"token": t,
-	})
 }
