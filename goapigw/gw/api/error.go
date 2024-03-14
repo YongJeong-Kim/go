@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"errors"
@@ -30,7 +30,7 @@ func errorResponse(err error) gin.H {
 	errors.As(err, &ce)
 
 	return gin.H{
-		"inner":       ce.Inner,
+		"inner":       ce.Inner.Error(),
 		"status_code": ce.StatusCode,
 		"message":     ce.Message,
 	}

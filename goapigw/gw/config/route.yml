@@ -8,7 +8,7 @@ gateway:
         - v2
       scheme: http
       target: localhost:8080
-    - name: serviceB
+    - name: service b
       context: /service-b
       version:
         - v1

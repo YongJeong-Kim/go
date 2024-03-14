@@ -71,7 +71,7 @@ func (s *AccountServer) Login(c *gin.Context) {
 		return
 	}
 
-	tk, err := s.Service.Login(req.Username, req.Password, time.Minute)
+	tk, err := s.Service.Login(req.Username, req.Password, 30*24*time.Hour)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
 			"message": err.Error(),
