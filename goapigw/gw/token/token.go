@@ -9,7 +9,7 @@ import (
 
 const (
 	Issuer = "test.gw"
-	keyHex = "ec6208ce3e155794d647719db39c645d9fa474a75b9515ce7571c3009428be55"
+	KeyHex = "ec6208ce3e155794d647719db39c645d9fa474a75b9515ce7571c3009428be55"
 )
 
 type TokenVerifier interface {

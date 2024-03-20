@@ -14,18 +14,6 @@ type Server struct {
 	Router        *gin.Engine
 }
 
-type Gateway struct {
-	ListenAddr string  `mapstructure:"listenAddr"`
-	Routes     []Route `mapstructure:"routes"`
-}
-
-type Route struct {
-	Version []string `mapstructure:"version"`
-	Scheme  string   `mapstructure:"scheme"`
-	Context string   `mapstructure:"context"`
-	Target  string   `mapstructure:"target"`
-}
-
 func NewServer(tokenVerifier token.TokenVerifier) *Server {
 	return &Server{
 		TokenVerifier: tokenVerifier,
@@ -48,11 +36,6 @@ func addProxy(scheme, host string) gin.HandlerFunc {
 
 func (s *Server) SetupRouter() {
 	r := gin.New()
-	r.Use(authMiddleware(s.TokenVerifier))
-	r.GET("/health", func(ctx *gin.Context) {
-		ctx.Status(http.StatusOK)
-		return
-	})
 	s.Router = r
 }
 
@@ -60,14 +43,30 @@ func (s *Server) SetupReverseProxy(gateway *Gateway) {
 	for _, r := range gateway.Routes {
 		for _, v := range r.Version {
 			path := r.Context + "/api/" + v + "/*path"
-			s.Router.Any(path, addProxy(r.Scheme, r.Context))
+			if r.Context == "account" {
+				s.Router.Any(path, addProxy(r.Scheme, r.Target))
+				continue
+			}
+			s.Router.Use(authMiddleware(s.TokenVerifier)).Any(path, addProxy(r.Scheme, r.Target))
 		}
 	}
 }
 
-func LoadConfig() *Gateway {
+type Gateway struct {
+	ListenAddr string  `mapstructure:"listenAddr"`
+	Routes     []Route `mapstructure:"routes"`
+}
+
+type Route struct {
+	Version []string `mapstructure:"version"`
+	Scheme  string   `mapstructure:"scheme"`
+	Context string   `mapstructure:"context"`
+	Target  string   `mapstructure:"target"`
+}
+
+func LoadConfig(path string) *Gateway {
 	viper.SetConfigType("yml")
-	viper.AddConfigPath("../config")
+	viper.AddConfigPath(path)
 	viper.SetConfigName("route")
 	//viper.AutomaticEnv()
 	err := viper.ReadInConfig()

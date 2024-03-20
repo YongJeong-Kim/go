@@ -48,7 +48,7 @@ func TestVerify(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var v TokenVerifier = NewPasetoVerifier(keyHex)
+			var v TokenVerifier = NewPasetoVerifier(KeyHex)
 
 			p, err := v.Verify(tc.accessToken)
 			tc.check(p, err)

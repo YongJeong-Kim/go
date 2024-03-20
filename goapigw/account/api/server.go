@@ -27,6 +27,8 @@ func NewAccountServer(service service.AccountServicer) *AccountServer {
 
 func (s *AccountServer) SetupRouter() {
 	r := gin.New()
+	// need set trust proxy gateway
+	// r.SetTrustedProxies()
 	r.POST(Accountv1+"/login", s.Login)
 	r.GET(Accountv1+"/111", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -60,8 +62,8 @@ func (s *AccountServer) SetupRouter() {
 
 func (s *AccountServer) Login(c *gin.Context) {
 	var req struct {
-		Username string `form:"username"`
-		Password string `form:"password"`
+		Username string `form:"username" binding:"required"`
+		Password string `form:"password" binding:"required"`
 	}
 	if err := c.ShouldBind(&req); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{

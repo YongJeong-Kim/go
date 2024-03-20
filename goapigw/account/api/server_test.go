@@ -8,7 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	url "net/url"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -17,13 +17,18 @@ import (
 func TestLogin(t *testing.T) {
 	testCases := []struct {
 		name       string
-		buildStubs func(*svcmock.MockAccountServicer)
+		param      url.Values
+		buildStubs func(*svcmock.MockAccountServicer, url.Values)
 		check      func(*httptest.ResponseRecorder)
 	}{
 		{
 			name: "OK",
-			buildStubs: func(m *svcmock.MockAccountServicer) {
-				m.EXPECT().Login("aaa", "1234", time.Minute).Times(1).Return("asdf", nil)
+			param: url.Values{
+				"username": {"aaa"},
+				"password": {"1234"},
+			},
+			buildStubs: func(m *svcmock.MockAccountServicer, u url.Values) {
+				m.EXPECT().Login(u.Get("username"), u.Get("password"), 30*24*time.Hour).Times(1).Return("asdf", nil)
 			},
 			check: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -36,6 +41,28 @@ func TestLogin(t *testing.T) {
 				require.Equal(t, result["access_token"], "asdf")
 			},
 		},
+		{
+			name: "invalid param",
+			param: url.Values{
+				"username1212": {"aaa"},
+				"password":     {"1234"},
+			},
+			buildStubs: func(m *svcmock.MockAccountServicer, u url.Values) {
+				m.EXPECT().Login(gomock.Any(), gomock.Any(), 30*24*time.Hour).Times(0)
+			},
+			check: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusBadRequest, recorder.Code)
+				b, err := io.ReadAll(recorder.Body)
+				require.NoError(t, err)
+
+				resp := make(map[string]any)
+				err = json.Unmarshal(b, &resp)
+				require.NoError(t, err)
+
+				require.Equal(t, "invalid username or password", resp["message"].(string))
+				require.Equal(t, http.StatusBadRequest, int(resp["status_code"].(float64)))
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -46,14 +73,10 @@ func TestLogin(t *testing.T) {
 			m := svcmock.NewMockAccountServicer(ctrl)
 			server := newTestServer(m)
 			server.SetupRouter()
-			tc.buildStubs(m)
-
-			form := url.Values{}
-			form.Add("username", "aaa")
-			form.Add("password", "1234")
+			tc.buildStubs(m, tc.param)
 
 			loginURL := Accountv1 + "/login"
-			request, err := http.NewRequest(http.MethodPost, loginURL, strings.NewReader(form.Encode()))
+			request, err := http.NewRequest(http.MethodPost, loginURL, strings.NewReader(tc.param.Encode()))
 			require.NoError(t, err)
 
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")

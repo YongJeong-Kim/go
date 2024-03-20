@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"github.com/yongjeong-kim/go/goapigw/gw/token"
 	tkmock "github.com/yongjeong-kim/go/goapigw/gw/token/mock"
@@ -97,9 +98,12 @@ func TestAuthMiddleware(t *testing.T) {
 			m := tkmock.NewMockTokenVerifier(ctrl)
 			server := newTestServer(m)
 			setupRouterForTest(t, server)
-
+			server.Router.Use(authMiddleware(server.TokenVerifier)).GET("/auth", func(c *gin.Context) {
+				c.Status(http.StatusOK)
+				return
+			})
 			tc.buildStubs(m)
-			req, err := http.NewRequest(http.MethodGet, "/health", nil)
+			req, err := http.NewRequest(http.MethodGet, "/auth", nil)
 			require.NoError(t, err)
 			tc.addAuth(req)
 			recorder := httptest.NewRecorder()

@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func loadConfigForTest(t *testing.T) *Gateway {
-	gw := LoadConfig()
+	gw := LoadConfig("../config")
 	require.NotEmpty(t, gw.ListenAddr)
 	require.NotNil(t, gw.ListenAddr)
 
