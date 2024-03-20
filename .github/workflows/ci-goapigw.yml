@@ -18,5 +18,5 @@ jobs:
           go-version: ${{ matrix.go-version }}
 
       - name: Run Test
-        working-directory: ./account
+        working-directory: ./goapigw/account
         run: make test
