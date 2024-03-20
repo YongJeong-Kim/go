@@ -1,0 +1,22 @@
+name: ci-goapigw
+on:
+  push:
+    branches: [ 'main', 'ft/*' ]
+  pull_request:
+    branches: [ 'main' ]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: [ '1.21', '1.22.x' ]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Go ${{ matrix.go-version }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Run Test
+        working-directory: ./goapigw/account
+        run: make test

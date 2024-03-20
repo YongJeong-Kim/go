@@ -6,3 +6,6 @@ mockgenservice:
 
 mockgentoken:
 	mockgen -packge tkmock -destination token/mock/token.go -source token/token.go TokenMaker
+
+test:
+	go test ./...
