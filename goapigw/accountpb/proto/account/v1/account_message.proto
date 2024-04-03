@@ -1,0 +1,15 @@
+syntax = "proto3";
+package account.v1;
+option go_package = "./accountv1";
+
+message Account {
+  string account_id = 1;
+}
+
+message CreateAccountRequest {
+  Account account = 1;
+}
+
+message CreateAccountResponse {
+  Account account = 1;
+}
