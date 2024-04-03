@@ -9,18 +9,24 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/hibiken/asynq"
 	"github.com/jmoiron/sqlx"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 const (
 	mysqlSource = "root:1234@tcp(localhost:13306)/test?parseTime=true"
 	redisAddr   = "127.0.0.1:16379"
 )
+
+var interruptSignals = []os.Signal{
+	os.Interrupt,
+	syscall.SIGTERM,
+	syscall.SIGINT,
+}
 
 func main() {
 	conn, err := GetConnection()
@@ -47,30 +53,61 @@ func main() {
 	taskServer := worker.NewTaskServer(server.TaskDistributor)
 	taskServer.SetupTaskServer()
 	taskServer.SetupServeMux()
-	go taskServer.RunTaskServer()
 
-	go func() {
+	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
+	defer stop()
+
+	group, ctx := errgroup.WithContext(ctx)
+
+	taskServer.RunTaskServer(ctx, group)
+
+	group.Go(func() error {
+		log.Println("run http server")
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen: %s\n", err)
+			log.Printf("listen: %s\n", err)
+			return err
 		}
-	}()
+		return nil
+	})
+	group.Go(func() error {
+		<-ctx.Done()
+		log.Println("shutdown http server")
+		err := srv.Shutdown(context.Background())
+		if err != nil {
+			log.Println("shutdown http server failed", err)
+			return err
+		}
 
-	quit := make(chan os.Signal)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Shutdown Server ...")
+		return nil
+	})
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatal("Server Shutdown:", err)
+	err = group.Wait()
+	if err != nil {
+		log.Fatal("wait group failed.", err)
 	}
-	// catching ctx.Done(). timeout of 5 seconds.
-	select {
-	case <-ctx.Done():
-		log.Println("timeout of 5 seconds.")
-	}
-	log.Println("Server exiting")
+
+	//go func() {
+	//	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	//		log.Fatalf("listen: %s\n", err)
+	//	}
+	//}()
+	//
+	//quit := make(chan os.Signal)
+	//signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	//<-quit
+	//log.Println("Shutdown Server ...")
+	//
+	//ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	//defer cancel()
+	//if err := srv.Shutdown(ctx); err != nil {
+	//	log.Fatal("Server Shutdown:", err)
+	//}
+	//// catching ctx.Done(). timeout of 5 seconds.
+	//select {
+	//case <-ctx.Done():
+	//	log.Println("timeout of 5 seconds.")
+	//}
+	//log.Println("Server exiting")
 }
 
 func GetConnection() (*sqlx.DB, error) {

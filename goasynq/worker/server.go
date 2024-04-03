@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/YongJeong-Kim/go/goasynq/tasks"
 	"github.com/hibiken/asynq"
+	"golang.org/x/sync/errgroup"
 	"log"
 )
 
@@ -47,11 +48,27 @@ func (t *TaskServer) SetupTaskServer() {
 	)
 }
 
-func (t *TaskServer) RunTaskServer() {
-	log.Println("run task server")
-	if err := t.Server.Run(t.Mux); err != nil {
-		log.Fatalf("could not run server: %v", err)
-	}
+func (t *TaskServer) RunTaskServer(ctx context.Context, group *errgroup.Group) {
+	group.Go(func() error {
+		log.Println("run task server")
+		if err := t.Server.Run(t.Mux); err != nil {
+			log.Printf("could not run server: %v", err)
+			return err
+		}
+		return nil
+	})
+
+	group.Go(func() error {
+		<-ctx.Done()
+		log.Println("stop task server")
+		t.Server.Stop()
+		log.Println("stopped task server")
+		log.Println("shutdown task server...")
+		t.Server.Shutdown()
+		log.Println("shutdown task server")
+
+		return nil
+	})
 }
 
 func (t *TaskServer) SetupServeMux() {
