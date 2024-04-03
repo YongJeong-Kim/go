@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -47,6 +48,7 @@ func (server *Server) DeleteUser(ctx context.Context, req *userv1.DeleteUserRequ
 }
 
 func (server *Server) CreateAccount(ctx context.Context, req *accountv1.CreateAccountRequest) (*accountv1.CreateAccountResponse, error) {
+	time.Sleep(10 * time.Second)
 	return &accountv1.CreateAccountResponse{
 		Account: &accountv1.Account{
 			AccountId: "dvdvdv",

@@ -11,6 +11,7 @@ import (
 	accountv1 "gogrpcapi/pb/account/v1"
 	userv1 "gogrpcapi/pb/user/v1"
 	"gogrpcapi/token"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -21,8 +22,17 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
+
+var interruptSignals = []os.Signal{
+	os.Interrupt,
+	syscall.SIGTERM,
+	syscall.SIGINT,
+}
 
 func RegisterService(grpcServer *grpc.Server, server *gapi.Server) {
 	accountv1.RegisterAccountServiceServer(grpcServer, server)
@@ -91,8 +101,16 @@ func main() {
 	//	log.Fatal("cannot start grpc server")
 	//}
 
-	go RunGatewayServer()
-	runGRPCServer()
+	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
+	defer stop()
+
+	group, ctx := errgroup.WithContext(ctx)
+	go RunGatewayServer(ctx, group)
+	runGRPCServer(ctx, group)
+
+	if err := group.Wait(); err != nil {
+		log.Fatal("group wait failed. ", err)
+	}
 }
 
 func parseToken(token string) (struct{}, error) {
@@ -121,7 +139,7 @@ func exampleAuthFunc(ctx context.Context) (context.Context, error) {
 	return context.WithValue(ctx, tokenInfoKey, tokenInfo), nil
 }
 
-func runGRPCServer() {
+func runGRPCServer(ctx context.Context, group *errgroup.Group) {
 	tokenMaker, err := token.NewJWTMaker("vDeow21qdQdnO4hPf82xFCd183DbtUos8v4EgY910Uh")
 	if err != nil {
 		log.Fatal("create token maker failed", err)
@@ -133,17 +151,33 @@ func runGRPCServer() {
 	)
 	RegisterService(grpcServer, server)
 	reflection.Register(grpcServer)
+
 	listener, err := net.Listen("tcp", "0.0.0.0:19090")
 	if err != nil {
 		log.Fatal("create listener failed.", err)
 	}
-	err = grpcServer.Serve(listener)
-	if err != nil {
-		log.Fatal("serve failed.", err)
-	}
+
+	group.Go(func() error {
+		log.Println("start grpc server")
+		err = grpcServer.Serve(listener)
+		if err != nil {
+			log.Println("serve failed.", err)
+			return err
+		}
+
+		return nil
+	})
+
+	group.Go(func() error {
+		<-ctx.Done()
+		log.Println("graceful shutdown grpc server...")
+		grpcServer.GracefulStop()
+		log.Println("graceful shutdown grpc server")
+		return nil
+	})
 }
 
-func RunGatewayServer() {
+func RunGatewayServer(ctx context.Context, group *errgroup.Group) {
 	tokenMaker, err := token.NewJWTMaker("vDeow21qdQdnO4hPf82xFCd183DbtUos8v4EgY910Uh")
 	if err != nil {
 		log.Fatal("create token maker failed", err)
@@ -176,9 +210,6 @@ func RunGatewayServer() {
 		}),
 	)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	err = RegisterHandlerServer(ctx, grpcMux, server)
 	if err != nil {
 		log.Fatal("cannot register handler server", err)
@@ -189,9 +220,25 @@ func RunGatewayServer() {
 		Handler: server.GetRouter(grpcMux, tokenMaker),
 	}
 
-	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("listen: %s\n", err)
-	}
+	group.Go(func() error {
+		log.Println("start gateway server")
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Println("listen and serve err: ", err)
+			return err
+		}
+		return nil
+	})
+	group.Go(func() error {
+		<-ctx.Done()
+		log.Println("graceful shutdown gateway server...")
+		err := srv.Shutdown(context.Background())
+		if err != nil {
+			log.Println("graceful shutdown gateway server failed.", err)
+			return err
+		}
+		log.Println("stopped gateway server")
+		return nil
+	})
 
 	//mux := http.NewServeMux()
 	//mux.Handle("/", grpcMux)
