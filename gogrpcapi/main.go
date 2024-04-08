@@ -105,7 +105,7 @@ func main() {
 	defer stop()
 
 	group, ctx := errgroup.WithContext(ctx)
-	go RunGatewayServer(ctx, group)
+	runGatewayServer(ctx, group)
 	runGRPCServer(ctx, group)
 
 	if err := group.Wait(); err != nil {
@@ -177,7 +177,7 @@ func runGRPCServer(ctx context.Context, group *errgroup.Group) {
 	})
 }
 
-func RunGatewayServer(ctx context.Context, group *errgroup.Group) {
+func runGatewayServer(ctx context.Context, group *errgroup.Group) {
 	tokenMaker, err := token.NewJWTMaker("vDeow21qdQdnO4hPf82xFCd183DbtUos8v4EgY910Uh")
 	if err != nil {
 		log.Fatal("create token maker failed", err)
