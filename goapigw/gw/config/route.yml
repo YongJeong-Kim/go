@@ -2,14 +2,14 @@ gateway:
   listenAddr: localhost:38080
   routes:
     - name: account service
-      context: /account
+      context: account
       version:
         - v1
         - v2
       scheme: http
       target: localhost:8080
-    - name: service b
-      context: /service-b
+    - name: shop service
+      context: shop
       version:
         - v1
       scheme: http

@@ -57,8 +57,8 @@ func loadConfigForTest(t *testing.T) *Gateway {
 	for _, r := range gw.Routes {
 		require.True(t, r.Scheme == "http" || r.Scheme == "https")
 
-		ctx := strings.Split(r.Context, "/")
-		require.Equal(t, len(ctx), 2)
+		require.NotNil(t, r.Context)
+		require.NotEmpty(t, r.Context)
 
 		target := strings.Split(r.Target, ":")
 		require.Equal(t, len(target), 2)

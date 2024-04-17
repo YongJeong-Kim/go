@@ -1,13 +1,27 @@
 syntax = "proto3";
 package account.v1;
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 import "account/v1/account_message.proto";
 option go_package = "./accountv1";
 
 service AccountService {
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse) {
     option (google.api.http) = {
-      post: "/v1/account"
+//      post: "/v1/account"
+      post: "/v1/account/aaa"
+      body: "*"
+    };
+  }
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/v1/account/login"
+      body: "*"
+    };
+  }
+  rpc UploadImage(UploadImageRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/account/images"
       body: "*"
     };
   }

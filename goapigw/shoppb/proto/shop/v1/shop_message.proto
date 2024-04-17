@@ -1,0 +1,15 @@
+syntax = "proto3";
+package shop.v1;
+option go_package = "./shopv1";
+
+message Shop {
+  string shop_id = 1;
+}
+
+message CreateShopRequest {
+  Shop shop = 1;
+}
+
+message CreateShopResponse {
+  Shop shop = 1;
+}

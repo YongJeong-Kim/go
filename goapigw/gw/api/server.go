@@ -42,7 +42,7 @@ func (s *Server) SetupRouter() {
 func (s *Server) SetupReverseProxy(gateway *Gateway) {
 	for _, r := range gateway.Routes {
 		for _, v := range r.Version {
-			path := r.Context + "/api/" + v + "/*path"
+			path := fmt.Sprintf("/%s/%s/%s", v, r.Context, "*path")
 			if r.Context == "account" {
 				s.Router.Any(path, addProxy(r.Scheme, r.Target))
 				continue

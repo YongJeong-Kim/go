@@ -1,4 +1,4 @@
-package main
+package gapi
 
 import (
 	"context"
@@ -14,22 +14,23 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
-	"syscall"
+	"time"
 )
 
 type AccountServer struct {
 	accountv1.UnimplementedAccountServiceServer
 	servicer service.AccountServicer
+	maker    token.TokenMaker
 }
 
-func NewAccountServer(svc service.AccountServicer) *AccountServer {
+func NewAccountServer(maker token.TokenMaker, svc service.AccountServicer) *AccountServer {
 	return &AccountServer{
+		maker:    maker,
 		servicer: svc,
 	}
 }
@@ -37,22 +38,51 @@ func NewAccountServer(svc service.AccountServicer) *AccountServer {
 func (s *AccountServer) CreateAccount(ctx context.Context, req *accountv1.CreateAccountRequest) (*accountv1.CreateAccountResponse, error) {
 	return &accountv1.CreateAccountResponse{
 		Account: &accountv1.Account{
-			AccountId: "",
+			AccountId: "1234",
 		},
 	}, nil
 }
 
-func (s *AccountServer) RunGRPCServer(ctx context.Context, group *errgroup.Group) {
-	var maker token.TokenMaker = token.NewPasetoMaker()
-	accountService := service.NewAccountService(maker)
+func (s *AccountServer) Login(ctx context.Context, req *accountv1.LoginRequest) (*accountv1.LoginResponse, error) {
+	username := req.GetUsername()
+	password := req.GetPassword()
+	if username != "aaa" || password != "1234" {
+		_ = grpc.SetHeader(ctx, metadata.Pairs("x-http-code", strconv.Itoa(http.StatusBadRequest)))
+		return nil, &APIError{
+			Inner:      fmt.Errorf("invalid username or password"),
+			StatusCode: http.StatusBadRequest,
+			Message:    "invalid username or password",
+		}
+	}
 
-	server := NewAccountServer(accountService)
+	tk, err := s.servicer.Login(username, password, 5*time.Minute)
+	if err != nil {
+		return nil, err
+	}
+
+	return &accountv1.LoginResponse{
+		Token: tk,
+	}, nil
+}
+
+func (s *AccountServer) UploadImage(ctx context.Context, req *accountv1.UploadImageRequest) (*emptypb.Empty, error) {
+	log.Println(req.GetImage().GetFilename())
+	log.Println(req.GetImage().GetContent())
+	log.Println(req.GetImage().GetContentType())
+	return nil, nil
+}
+
+func (s *AccountServer) setupGRPCServer(ctx context.Context) *grpc.Server {
 	grpcServer := grpc.NewServer(
 	//grpc.UnaryInterceptor(auth.UnaryServerInterceptor(exampleAuthFunc)),
 	)
-	RegisterService(grpcServer, server)
+	RegisterService(grpcServer, s)
 	reflection.Register(grpcServer)
 
+	return grpcServer
+}
+func (s *AccountServer) RunGRPCServer(ctx context.Context, group *errgroup.Group) {
+	grpcServer := s.setupGRPCServer(ctx)
 	listener, err := net.Listen("tcp", "0.0.0.0:19090")
 	if err != nil {
 		log.Fatal("create listener failed.", err)
@@ -78,37 +108,38 @@ func (s *AccountServer) RunGRPCServer(ctx context.Context, group *errgroup.Group
 	})
 }
 
-func (s *AccountServer) RunGatewayServer(ctx context.Context, group *errgroup.Group) {
-	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+func (s *AccountServer) setupGatewayServer(ctx context.Context) *runtime.ServeMux {
+	marshaler := &runtime.JSONPb{
 		MarshalOptions: protojson.MarshalOptions{
 			UseProtoNames: true,
 		},
 		UnmarshalOptions: protojson.UnmarshalOptions{
 			DiscardUnknown: true,
 		},
-	})
+	}
+	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
 
 	grpcMux := runtime.NewServeMux(
+		GWMultipartForm(marshaler),
 		jsonOption,
 		runtime.WithForwardResponseOption(httpResponseModifier),
 		runtime.WithIncomingHeaderMatcher(incomingHeaderMatcher),
 		runtime.WithMetadata(metadataMatcher),
 		runtime.WithOutgoingHeaderMatcher(headerMatcher),
-		runtime.WithErrorHandler(func(ctx context.Context, mux *runtime.ServeMux, marshaler runtime.Marshaler, writer http.ResponseWriter, request *http.Request, err error) {
-			//creating a new HTTTPStatusError with a custom status, and passing error
-			newError := runtime.HTTPStatusError{
-				HTTPStatus: 400,
-				Err:        err,
-			}
-			// using default handler to do the rest of heavy lifting of marshaling error and adding headers
-			runtime.DefaultHTTPErrorHandler(ctx, mux, marshaler, writer, request, &newError)
-		}),
+		runtime.WithRoutingErrorHandler(routingErrorHandler),
+		runtime.WithErrorHandler(errorHandler),
 	)
 
 	err := RegisterHandlerServer(ctx, grpcMux, s)
 	if err != nil {
 		log.Fatal("cannot register handler server", err)
 	}
+
+	return grpcMux
+}
+
+func (s *AccountServer) RunGatewayServer(ctx context.Context, group *errgroup.Group) {
+	grpcMux := s.setupGatewayServer(ctx)
 
 	srv := &http.Server{
 		Addr:    ":8080",
@@ -136,75 +167,9 @@ func (s *AccountServer) RunGatewayServer(ctx context.Context, group *errgroup.Gr
 	})
 }
 
-func httpResponseModifier(ctx context.Context, w http.ResponseWriter, p proto.Message) error {
-	md, ok := runtime.ServerMetadataFromContext(ctx)
-	if !ok {
-		return nil
-	}
-
-	// set http status code
-	if vals := md.HeaderMD.Get("x-http-code"); len(vals) > 0 {
-		code, err := strconv.Atoi(vals[0])
-		if err != nil {
-			return err
-		}
-		// delete the headers to not expose any grpc-metadata in http response
-		delete(md.HeaderMD, "x-http-code")
-		delete(w.Header(), "Grpc-Metadata-X-Http-Code")
-		w.WriteHeader(code)
-	}
-
-	return nil
-}
-
-func incomingHeaderMatcher(header string) (string, bool) {
-	log.Println("header:", header)
-	return "", true
-}
-
-func metadataMatcher(ctx context.Context, req *http.Request) metadata.MD {
-	bearer := req.Header.Get("Authorization")
-	log.Println("token:", bearer)
-	return nil
-}
-
-func headerMatcher(header string) (string, bool) {
-	log.Println("header:", header)
-	return "", true
-}
-
-var interruptSignals = []os.Signal{
-	os.Interrupt,
-	syscall.SIGTERM,
-	syscall.SIGINT,
-}
-
-func RegisterService(grpcServer *grpc.Server, server *AccountServer) {
-	accountv1.RegisterAccountServiceServer(grpcServer, server)
-}
-
-func RegisterHandlerServer(ctx context.Context, grpcMux *runtime.ServeMux, server *AccountServer) error {
-	register := func(errs ...error) error {
-		for _, err := range errs {
-			if err != nil {
-				return fmt.Errorf("register handler server failed.", err)
-			}
-		}
-
-		return nil
-	}
-
-	return register(
-		accountv1.RegisterAccountServiceHandlerServer(ctx, grpcMux, server),
-	)
-}
-
 func (s *AccountServer) GetRouter(wrapHandler http.Handler) *gin.Engine {
 	r := gin.New()
-	r.Group("/v1/*{grpc_gateway}").Any("", gin.WrapH(wrapHandler))
-	r.GET("/another", func(c *gin.Context) {
-		c.Status(http.StatusOK)
-	})
+	r.Group("/v1/account/*{grpc_gateway}").Any("", gin.WrapH(wrapHandler))
 
 	return r
 }
