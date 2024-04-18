@@ -310,6 +310,53 @@ func (x *UploadImageRequest) GetImage() *UploadImageRequest_Image {
 	return nil
 }
 
+type ListAccountResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	AccountId []string `protobuf:"bytes,1,rep,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+}
+
+func (x *ListAccountResponse) Reset() {
+	*x = ListAccountResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_account_v1_account_message_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ListAccountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAccountResponse) ProtoMessage() {}
+
+func (x *ListAccountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_account_v1_account_message_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAccountResponse.ProtoReflect.Descriptor instead.
+func (*ListAccountResponse) Descriptor() ([]byte, []int) {
+	return file_account_v1_account_message_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListAccountResponse) GetAccountId() []string {
+	if x != nil {
+		return x.AccountId
+	}
+	return nil
+}
+
 type UploadImageRequest_Image struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -323,7 +370,7 @@ type UploadImageRequest_Image struct {
 func (x *UploadImageRequest_Image) Reset() {
 	*x = UploadImageRequest_Image{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_account_v1_account_message_proto_msgTypes[6]
+		mi := &file_account_v1_account_message_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -336,7 +383,7 @@ func (x *UploadImageRequest_Image) String() string {
 func (*UploadImageRequest_Image) ProtoMessage() {}
 
 func (x *UploadImageRequest_Image) ProtoReflect() protoreflect.Message {
-	mi := &file_account_v1_account_message_proto_msgTypes[6]
+	mi := &file_account_v1_account_message_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -408,9 +455,12 @@ var file_account_v1_account_message_proto_rawDesc = []byte{
 	0x0a, 0x0c, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x54, 0x79, 0x70,
 	0x65, 0x12, 0x18, 0x0a, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x0c, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x42, 0x0d, 0x5a, 0x0b, 0x2e,
-	0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x76, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x28, 0x0c, 0x52, 0x07, 0x63, 0x6f, 0x6e, 0x74, 0x65, 0x6e, 0x74, 0x22, 0x34, 0x0a, 0x13, 0x4c,
+	0x69, 0x73, 0x74, 0x41, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e,
+	0x73, 0x65, 0x12, 0x1d, 0x0a, 0x0a, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x5f, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x09, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x49,
+	0x64, 0x42, 0x0d, 0x5a, 0x0b, 0x2e, 0x2f, 0x61, 0x63, 0x63, 0x6f, 0x75, 0x6e, 0x74, 0x76, 0x31,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -425,7 +475,7 @@ func file_account_v1_account_message_proto_rawDescGZIP() []byte {
 	return file_account_v1_account_message_proto_rawDescData
 }
 
-var file_account_v1_account_message_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_account_v1_account_message_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_account_v1_account_message_proto_goTypes = []interface{}{
 	(*Account)(nil),                  // 0: account.v1.Account
 	(*CreateAccountRequest)(nil),     // 1: account.v1.CreateAccountRequest
@@ -433,12 +483,13 @@ var file_account_v1_account_message_proto_goTypes = []interface{}{
 	(*LoginRequest)(nil),             // 3: account.v1.LoginRequest
 	(*LoginResponse)(nil),            // 4: account.v1.LoginResponse
 	(*UploadImageRequest)(nil),       // 5: account.v1.UploadImageRequest
-	(*UploadImageRequest_Image)(nil), // 6: account.v1.UploadImageRequest.Image
+	(*ListAccountResponse)(nil),      // 6: account.v1.ListAccountResponse
+	(*UploadImageRequest_Image)(nil), // 7: account.v1.UploadImageRequest.Image
 }
 var file_account_v1_account_message_proto_depIdxs = []int32{
 	0, // 0: account.v1.CreateAccountRequest.account:type_name -> account.v1.Account
 	0, // 1: account.v1.CreateAccountResponse.account:type_name -> account.v1.Account
-	6, // 2: account.v1.UploadImageRequest.image:type_name -> account.v1.UploadImageRequest.Image
+	7, // 2: account.v1.UploadImageRequest.image:type_name -> account.v1.UploadImageRequest.Image
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
@@ -525,6 +576,18 @@ func file_account_v1_account_message_proto_init() {
 			}
 		}
 		file_account_v1_account_message_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ListAccountResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_account_v1_account_message_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*UploadImageRequest_Image); i {
 			case 0:
 				return &v.state
@@ -543,7 +606,7 @@ func file_account_v1_account_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_account_v1_account_message_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

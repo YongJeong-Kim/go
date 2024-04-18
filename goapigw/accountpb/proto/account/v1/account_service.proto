@@ -25,4 +25,9 @@ service AccountService {
       body: "*"
     };
   }
+  rpc ListAccount(google.protobuf.Empty) returns (ListAccountResponse) {
+    option (google.api.http) = {
+      get: "/v1/account/all"
+    };
+  }
 }

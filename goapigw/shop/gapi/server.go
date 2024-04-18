@@ -3,7 +3,6 @@ package gapi
 import (
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	accountv1 "github.com/yongjeong-kim/go/goapigw/accountpb/pb/account/v1"
 	shopv1 "github.com/yongjeong-kim/go/goapigw/shoppb/pb/shop/v1"
@@ -13,6 +12,7 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"net"
 	"net/http"
@@ -98,22 +98,8 @@ func (s *ShopServer) RunGatewayServer(ctx context.Context, group *errgroup.Group
 		log.Fatal("cannot register handler server", err)
 	}
 
-	/*conn, err := grpc.NewClient(":8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalln("Failed to dial server:", err)
-	}
-	defer conn.Close()
-
-	shopv1.RegisterShopServiceHandler(ctx, grpcMux, conn)
-
-	err = http.ListenAndServe("0.0.0.0:8081", grpcMux)
-	if err != nil {
-
-	}*/
-
 	srv := &http.Server{
-		Addr: ":8081",
-		//Handler: s.GetRouter(grpcMux),
+		Addr:    ":8081",
 		Handler: grpcMux,
 	}
 
@@ -173,15 +159,12 @@ func headerMatcher(header string) (string, bool) {
 	return "", true
 }
 
-func (s *ShopServer) GetRouter(wrapHandler http.Handler) *gin.Engine {
-	r := gin.New()
-	//r.Group("/v1/shop/*{grpc_gateway}").Any("", gin.WrapH(wrapHandler))
-	r.Group("").Any("", gin.WrapH(wrapHandler))
-
-	return r
-}
-
 func (s *ShopServer) CreateShop(ctx context.Context, req *shopv1.CreateShopRequest) (*shopv1.CreateShopResponse, error) {
+	resp, err := s.AccountClient.ListAccount(ctx, &emptypb.Empty{})
+	if err != nil {
+	}
+
+	log.Println(resp.AccountId)
 	return &shopv1.CreateShopResponse{
 		Shop: &shopv1.Shop{
 			ShopId: "qweqwe",

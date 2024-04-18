@@ -31,3 +31,7 @@ message UploadImageRequest {
   }
   Image image = 1;
 }
+
+message ListAccountResponse {
+  repeated string account_id = 1;
+}

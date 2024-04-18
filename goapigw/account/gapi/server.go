@@ -72,6 +72,12 @@ func (s *AccountServer) UploadImage(ctx context.Context, req *accountv1.UploadIm
 	return nil, nil
 }
 
+func (s *AccountServer) ListAccount(ctx context.Context, empty *emptypb.Empty) (*accountv1.ListAccountResponse, error) {
+	return &accountv1.ListAccountResponse{
+		AccountId: []string{"1", "2"},
+	}, nil
+}
+
 func (s *AccountServer) setupGRPCServer(ctx context.Context) *grpc.Server {
 	grpcServer := grpc.NewServer(
 	//grpc.UnaryInterceptor(auth.UnaryServerInterceptor(exampleAuthFunc)),
