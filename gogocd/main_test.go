@@ -10,6 +10,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	gin.SetMode(gin.TestMode)
 	code := m.Run()
 	os.Exit(code)
 }
@@ -22,6 +23,7 @@ func TestDefault(t *testing.T) {
 		{
 			name: "OK",
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.True(t, false)
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
