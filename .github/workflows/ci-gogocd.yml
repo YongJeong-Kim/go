@@ -21,6 +21,4 @@ jobs:
 
       - name: Test
         working-directory: ./gogocd
-        run: |
-          go mod tidy
-          go test ./...
+        run: go test ./...
