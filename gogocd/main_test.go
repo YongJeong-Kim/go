@@ -23,7 +23,6 @@ func TestDefault(t *testing.T) {
 		{
 			name: "OK",
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
-				require.True(t, false)
 				require.Equal(t, http.StatusOK, recorder.Code)
 			},
 		},
