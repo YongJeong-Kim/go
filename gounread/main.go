@@ -3,9 +3,10 @@ package main
 import (
 	"context"
 	"github.com/gocql/gocql"
-	"github.com/redis/go-redis/v9"
 	"github.com/scylladb/gocqlx/v2"
 	"golang.org/x/sync/errgroup"
+	"gounread/api"
+	"gounread/service"
 	"log"
 	"net/http"
 	"os"
@@ -16,8 +17,8 @@ import (
 var interruptSignal = []os.Signal{syscall.SIGTERM, syscall.SIGINT, os.Interrupt}
 
 func main() {
-	var svc Servicer = NewService(NewSession(), NewRedisClient())
-	server := NewServer(svc, NewRedisClient())
+	var svc service.Servicer = service.NewService(NewSession())
+	server := api.NewServer(svc, api.NewRedis())
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignal...)
 	defer stop()
@@ -29,6 +30,13 @@ func main() {
 		Addr:    ":8080",
 		Handler: server.Router,
 	}
+	group.Go(func() error {
+		server.SetupSubscription(ctx, []string{
+			"cd8bb8a2-f947-4777-92b9-fbdb839c67ac",
+			"01f84cfa-e487-494c-82e5-e75f95ef0573",
+		})
+		return nil
+	})
 	group.Go(func() error {
 		if err := svr.ListenAndServe(); err != nil {
 			log.Fatal("listen failed.", err)
@@ -43,12 +51,6 @@ func main() {
 			return nil
 		}
 
-		err = server.Redis.ShutdownSave(ctx).Err()
-		if err != nil {
-			log.Println("redis client shutdown failed.", err)
-			return nil
-		}
-		log.Println("redis client shutdown")
 		return nil
 	})
 
@@ -72,16 +74,4 @@ func NewSession() gocqlx.Session {
 	}
 
 	return session
-}
-
-func NewRedisClient() *redis.Client {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
-		Password: "",
-	})
-	if err := client.Ping(context.Background()).Err(); err != nil {
-		log.Fatal("redis client ping failed.", err)
-	}
-
-	return client
 }
