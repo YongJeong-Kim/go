@@ -7,9 +7,10 @@ import (
 	"time"
 )
 
-var servers = []string{"nats://localhost:14222", "nats://localhost:24222", "nats://localhost:34222"}
+//var servers = []string{"nats://localhost:14222", "nats://localhost:24222", "nats://localhost:34222"}
 
-//var servers = []string{"nats://localhost:14222"}
+// var servers = []string{"nats://localhost:14222", "nats://localhost:24222", "nats://localhost:34222"}
+var servers = []string{"nats://localhost:14222"}
 
 func main() {
 	opts := nats.Options{
@@ -39,20 +40,21 @@ func main() {
 			//defer sub.Unsubscribe()
 
 			//time.Sleep(15 * time.Second)
-			//cn <- conn
 			//conn.Close()
 		},
 		ClosedCB: func(conn *nats.Conn) {
 			log.Println("close conn")
 		},
 		AsyncErrorCB: func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-			log.Println("why")
+			log.Println("async error.", err)
 		},
 		AllowReconnect: true,
+		User:           "aaa",
+		Password:       "1234",
 	}
 
 	errCnt := 0
-	for range 100 {
+	for range 1030 {
 		go func(i int) {
 			_, err := opts.Connect()
 			if err != nil {
