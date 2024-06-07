@@ -23,6 +23,8 @@ create table room
   users          list<uuid>,
   primary key (id)
 );
+CREATE INDEX room_users_idx
+  ON room (users);
 INSERT INTO room(id, users, recent_message, time)
 VALUES(cd8bb8a2-f947-4777-92b9-fbdb839c67ac, [05f84f46-d4ad-42db-af4f-da63cffcb721,
 febba554-152e-496a-add5-31d0672fdc2a,

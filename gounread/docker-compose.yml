@@ -7,9 +7,3 @@ services:
     ports:
       - "9042:9042"
     restart: always
-
-  redis:
-    image: redis
-    ports:
-      - "36379:6379"
-    restart: always

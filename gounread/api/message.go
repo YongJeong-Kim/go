@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gounread/service"
 	"net/http"
@@ -34,9 +35,10 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
+	userID := c.Request.Header.Get("user")
 	err := s.Service.SendMessage(&service.SendMessageParam{
 		RoomID:  reqURI.RoomID,
-		Sender:  c.Request.Header.Get("user"),
+		Sender:  userID,
 		Message: reqJSON.Message,
 		After:   nil,
 	})
@@ -47,19 +49,49 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
-	payload := &Payload{
-		RoomID:  reqURI.RoomID,
-		Sender:  c.Request.Header.Get("user"),
-		Message: reqJSON.Message,
-	}
-	b, _ := json.Marshal(payload)
-	err = s.Redis.Publish(c.Request.Context(), reqURI.RoomID, b).Err()
+	users, err := s.Service.GetRoomUsersByRoomID(reqURI.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
+
+	for _, u := range users {
+		if u != userID {
+			err = s.Service.IncrementUnreadMessage(reqURI.RoomID, u, 1)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+		}
+	}
+
+	payload := &Payload{
+		RoomID:  reqURI.RoomID,
+		Sender:  c.Request.Header.Get("user"),
+		Message: reqJSON.Message,
+	}
+	b, _ := json.Marshal(payload)
+
+	err = s.Nats.Publish("room."+reqURI.RoomID, b)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%s%v", "room publish error. ", err),
+		})
+		return
+	}
+
+	err = s.Nats.Publish("lobby."+reqURI.RoomID, b)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%s%v", "lobby publish error. ", err),
+		})
+		return
+	}
+
 	c.Status(http.StatusCreated)
 }
 
@@ -94,4 +126,29 @@ func (s *Server) ReadMessage(c *gin.Context) {
 
 	messages := s.Service.GetRecentMessages(reqURI.RoomID, 10)
 	c.JSON(http.StatusOK, messages)
+}
+
+func (s *Server) GetUnreadCount(c *gin.Context) {
+	var reqURI struct {
+		RoomID string `uri:"room_id" binding:"required"`
+	}
+	if err := c.ShouldBindUri(&reqURI); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	userID := c.Request.Header.Get("user")
+	count, err := s.Service.GetUnreadCount(reqURI.RoomID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"count": count,
+	})
 }
