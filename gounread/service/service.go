@@ -4,19 +4,27 @@ import (
 	"github.com/scylladb/gocqlx/v2"
 )
 
-type Service struct {
-	Session gocqlx.Session
+type Message interface {
+	SendMessage(*SendMessageParam) error
+	SetRecentMessage(roomID, recentMessage string) error
+	GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult
+	GetAllRoomsReadMessageTime(userID string) []*GetAllRoomsReadMessageTimeResult
+	GetRoomsUnreadMessageCount(times []*GetAllRoomsReadMessageTimeResult) []*GetRoomsUnreadMessageCountResult
+	ReadMessage(roomID, userID string) error
+}
+
+type Room interface {
+	GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult
+	GetRoomStatusInLobby(roomID, userID string) (*GetRoomStatusInLobbyResult, error)
 }
 
 type Servicer interface {
-	GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult
-	SendMessage(*SendMessageParam) error
-	SetRecentMessage(roomID, recentMessage string) error
-	IncrementUnreadMessage(roomID, userID string, inc int) error
-	GetRoomUsersByRoomID(roomID string) ([]string, error)
-	GetUsersByRoomID(roomID string) []string
-	GetUnreadCount(roomID, userID string) (int, error)
-	GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult
+	Message
+	Room
+}
+
+type Service struct {
+	Session gocqlx.Session
 }
 
 func NewService(session gocqlx.Session) *Service {

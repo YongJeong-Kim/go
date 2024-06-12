@@ -36,3 +36,17 @@ INSERT INTO room(id, users, recent_message, time)
 VALUES(01f84cfa-e487-494c-82e5-e75f95ef0573, [05f84f46-d4ad-42db-af4f-da63cffcb721,
 febba554-152e-496a-add5-31d0672fdc2a], '', toTimestamp(now()));
 
+CREATE TABLE message_read (
+  room_id     uuid,
+  user_id     uuid,
+  read_time   timestamp,
+  PRIMARY KEY (room_id, user_id)
+);
+CREATE MATERIALIZED VIEW message_read_by_user AS
+  SELECT room_id,
+         user_id,
+         read_time
+  FROM message_read
+  WHERE room_id IS NOT NULL
+    AND user_id IS NOT NULL
+PRIMARY KEY (user_id, room_id);

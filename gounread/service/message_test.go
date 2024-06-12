@@ -7,7 +7,6 @@ import (
 	"gounread/api"
 	"gounread/service"
 	"log"
-	"time"
 )
 
 var _ = Describe("Message Service", func() {
@@ -44,13 +43,36 @@ var _ = Describe("Message Service", func() {
 					Message: "",
 				})
 				Expect(err).To(Succeed())
-				Contain
+			})
+
+			It("ok", func(ctx SpecContext) {
+				err := svc.SendMessage(&service.SendMessageParam{
+					RoomID:  uuid.NewString(),
+					Sender:  uuid.NewString(),
+					Message: "asdiw",
+				})
+				Expect(err).To(Succeed())
 			})
 		})
-		Context("dd", func() {
-			It("dd", func(ctx SpecContext) {
-				Expect(true, true)
-			}, SpecTimeout(time.Second*3))
+	})
+
+	When("read message", func() {
+		Context("", func() {
+			It("", func() {
+				err := svc.ReadMessage(uuid.NewString(), uuid.NewString())
+				Expect(err).To(Succeed())
+			})
+		})
+	})
+
+	When("get all rooms by user", func() {
+		Context("", func() {
+			It("", func() {
+				//rooms := svc.GetRoomsByUserID("febba554-152e-496a-add5-31d0672fdc2a")
+				times := svc.GetAllRoomsReadMessageTime("febba554-152e-496a-add5-31d0672fdc2a")
+				counts := svc.GetRoomsUnreadMessageCount(times)
+				log.Println(counts)
+			})
 		})
 	})
 })

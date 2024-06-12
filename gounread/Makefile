@@ -1,0 +1,3 @@
+
+testall:
+	ginkgo -r

@@ -49,24 +49,12 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
-	users, err := s.Service.GetRoomUsersByRoomID(reqURI.RoomID)
+	err = s.Service.SetRecentMessage(reqURI.RoomID, reqJSON.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
-	}
-
-	for _, u := range users {
-		if u != userID {
-			err = s.Service.IncrementUnreadMessage(reqURI.RoomID, u, 1)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": err.Error(),
-				})
-				return
-			}
-		}
 	}
 
 	payload := &Payload{
@@ -92,6 +80,14 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
+	err = s.Nats.Publish("focus.lobby."+reqURI.RoomID, b)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("%s%v", "focus lobby publish error. ", err),
+		})
+		return
+	}
+
 	c.Status(http.StatusCreated)
 }
 
@@ -108,15 +104,8 @@ func (s *Server) ReadMessage(c *gin.Context) {
 	}
 
 	userID := c.Request.Header.Get("user")
-	count, err := s.Service.GetUnreadCount(reqURI.RoomID, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
 
-	err = s.Service.IncrementUnreadMessage(reqURI.RoomID, userID, -count)
+	err := s.Service.ReadMessage(reqURI.RoomID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -128,7 +117,7 @@ func (s *Server) ReadMessage(c *gin.Context) {
 	c.JSON(http.StatusOK, messages)
 }
 
-func (s *Server) GetUnreadCount(c *gin.Context) {
+func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 	var reqURI struct {
 		RoomID string `uri:"room_id" binding:"required"`
 	}
@@ -140,7 +129,7 @@ func (s *Server) GetUnreadCount(c *gin.Context) {
 	}
 
 	userID := c.Request.Header.Get("user")
-	count, err := s.Service.GetUnreadCount(reqURI.RoomID, userID)
+	count, err := s.Service.GetRoomStatusInLobby(reqURI.RoomID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -148,7 +137,5 @@ func (s *Server) GetUnreadCount(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"count": count,
-	})
+	c.JSON(http.StatusOK, count)
 }

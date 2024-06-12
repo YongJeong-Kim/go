@@ -58,9 +58,9 @@ func main() {
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
 
-			var count map[string]int
+			var count *service.GetRoomStatusInLobbyResult
 			if payload.Sender != *userID {
-				req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/unread/"+r.ID, nil)
+				req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/rooms/"+r.ID, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -88,7 +88,7 @@ func main() {
 			if payload.Sender == *userID {
 				log.Println("unread count: ", "sender is me")
 			} else {
-				log.Println("unread count: ", count["count"])
+				log.Println("unread count: ", count.UnreadCount)
 			}
 			log.Println("msg: ", payload.Message)
 			log.Println("---------------------------")

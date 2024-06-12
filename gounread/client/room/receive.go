@@ -55,6 +55,11 @@ func main() {
 	for _, r := range result {
 		roomSubject := fmt.Sprintf("%s.%s", "room", r.ID)
 		nc.Subscribe(roomSubject, func(msg *nats.Msg) {
+			err = requestReadMessage(r, *userID)
+			if err != nil {
+				log.Fatal(err)
+			}
+
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
 			log.Println("---------------------------")
@@ -65,8 +70,8 @@ func main() {
 			log.Println("---------------------------")
 		})
 
-		lobbySubject := fmt.Sprintf("%s.%s", "lobby", r.ID)
-		nc.Subscribe(lobbySubject, func(msg *nats.Msg) {
+		focusedLobbySubject := fmt.Sprintf("focus.%s.%s", "lobby", r.ID)
+		nc.Subscribe(focusedLobbySubject, func(msg *nats.Msg) {
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
 			log.Println("---------------------------")
@@ -80,4 +85,24 @@ func main() {
 
 	c := make(chan struct{})
 	<-c
+}
+
+func requestReadMessage(r *service.GetRoomsByUserIDResult, userID string) error {
+	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/rooms/"+r.ID+"/read", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	req.Header.Set("user", userID)
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("read messag error. ")
+	}
+	return nil
 }

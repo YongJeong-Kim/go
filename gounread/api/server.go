@@ -8,7 +8,6 @@ import (
 	"gounread/service"
 	"log"
 	"net/http"
-	"sort"
 )
 
 func (s *Server) ConnectClient(c *gin.Context) {
@@ -22,24 +21,6 @@ func (s *Server) ConnectClient(c *gin.Context) {
 
 	rooms := s.Service.GetRoomsByUserID(userID)
 	c.JSON(http.StatusOK, rooms)
-}
-
-func (s *Server) GetRoomsByUserID(c *gin.Context) {
-	var req struct {
-		UserID string `uri:"user_id"`
-	}
-	if err := c.ShouldBindUri(&req); err != nil {
-
-	}
-
-	rooms := s.Service.GetRoomsByUserID(req.UserID)
-
-	sort.Slice(rooms, func(i, j int) bool {
-		return rooms[i].Time.After(rooms[j].Time)
-	})
-	c.JSON(http.StatusOK, gin.H{
-		"rooms": rooms,
-	})
 }
 
 type Server struct {
@@ -56,11 +37,15 @@ func NewServer(svr service.Servicer) *Server {
 
 func (s *Server) SetupRouter() {
 	r := gin.New()
-	r.GET("/users/:user_id", s.GetRoomsByUserID)
-	r.POST("/rooms/:room_id/send", s.SendMessage)
-	r.PUT("/rooms/:room_id/read", s.ReadMessage)
+	r.GET("/users/:user_id/rooms", s.GetRoomsByUserID)
 	r.POST("/connect", s.ConnectClient)
-	r.GET("/unread/:room_id", s.GetUnreadCount)
+
+	roomRouter := r.Group("/rooms")
+	{
+		roomRouter.POST("/:room_id/send", s.SendMessage)
+		roomRouter.PUT("/:room_id/read", s.ReadMessage)
+		roomRouter.GET("/:room_id", s.GetRoomStatusInLobby)
+	}
 	s.Router = r
 }
 
