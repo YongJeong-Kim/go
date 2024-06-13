@@ -53,14 +53,14 @@ func main() {
 	json.Unmarshal(data, &result)
 	log.Println(result)
 	for _, r := range result {
-		lobbySubject := fmt.Sprintf("%s.%s", "lobby", r.ID)
+		lobbySubject := fmt.Sprintf("%s.%s", "lobby", r.RoomID)
 		nc.Subscribe(lobbySubject, func(msg *nats.Msg) {
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
 
-			var count *service.GetRoomStatusInLobbyResult
+			var count *api.GetRoomStatusInLobbyResponse
 			if payload.Sender != *userID {
-				req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/rooms/"+r.ID, nil)
+				req, err := http.NewRequest(http.MethodGet, "http://localhost:8080/rooms/"+r.RoomID, nil)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -73,15 +73,32 @@ func main() {
 				}
 				defer resp.Body.Close()
 
+				if resp.StatusCode != http.StatusOK {
+					data, err := io.ReadAll(resp.Body)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					var m map[string]string
+					err = json.Unmarshal(data, &m)
+					if err != nil {
+						log.Fatal("unread count unmarshal error. ", err)
+					}
+					log.Fatal(m["error"])
+				}
+
 				data, err := io.ReadAll(resp.Body)
 				if err != nil {
 					log.Fatal(err)
 				}
 
-				json.Unmarshal(data, &count)
+				err = json.Unmarshal(data, &count)
+				if err != nil {
+					log.Fatal("unread count unmarshal error. ", err)
+				}
 			}
 
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 			log.Println("lobby: ", msg.Subject)
 			log.Println("receiver: ", *userID)
 			log.Println("sender: ", payload.Sender)
@@ -91,7 +108,7 @@ func main() {
 				log.Println("unread count: ", count.UnreadCount)
 			}
 			log.Println("msg: ", payload.Message)
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 
 		})
 	}

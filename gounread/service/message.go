@@ -3,7 +3,6 @@ package service
 import (
 	"fmt"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -23,34 +22,14 @@ func (s *Service) SendMessage(param *SendMessageParam) error {
 	return nil
 }
 
-func (s *Service) SetRecentMessage(roomID, recentMessage string) error {
-	q := `UPDATE room SET recent_message = ?, time = toTimestamp(now()) WHERE id = ?`
+func (s *Service) UpdateRecentMessage(roomID, recentMessage string) error {
+	q := `UPDATE room SET recent_message = ?, time = toTimestamp(now()) WHERE room_id = ?`
 	err := s.Session.Query(q, []string{}).Bind(recentMessage, roomID).ExecRelease()
 	if err != nil {
-		return fmt.Errorf("add message unread failed. %v", err)
+		return fmt.Errorf("update recent message failed. %v", err)
 	}
 	return nil
 }
-
-/*func (s *Service) IncrementUnreadMessage(roomID, userID string, inc int) error {
-	q := `UPDATE message_unread SET unread = unread + ? WHERE room_id = ? AND user_id = ?`
-	err := s.Session.Query(q, []string{}).Bind(inc, roomID, userID).ExecRelease()
-	if err != nil {
-		return fmt.Errorf("add message unread failed. %v", err)
-	}
-	return nil
-}*/
-
-/*func (s *Service) GetUnreadCount(roomID, userID string) (int, error) {
-	var result int
-	q := `SELECT unread FROM message_unread WHERE room_id = ? AND user_id = ? LIMIT 1`
-	err := s.Session.Query(q, []string{}).Bind(roomID, userID).GetRelease(&result)
-	if err != nil {
-		return 0, fmt.Errorf("reset unread failed. %v", err)
-	}
-
-	return result, nil
-}*/
 
 type GetRecentMessagesResult struct {
 	Sent   time.Time `db:"sent" json:"sent"`
@@ -128,42 +107,37 @@ func (s *Service) GetRoomsUnreadMessageCount(times []*GetAllRoomsReadMessageTime
 	return result
 }
 
-type GetRoomStatusInLobbyResult struct {
-	RoomID        string `json:"room_id"`
-	RecentMessage string `json:"recent_message"`
-	UnreadCount   string `json:"unread_count"`
+type GetRecentMessageByRoomIDResult struct {
+	RoomID        string `db:"room_id" json:"room_id"`
+	RecentMessage string `db:"recent_message" json:"recent_message"`
 }
 
-func (s *Service) GetRoomStatusInLobby(roomID, userID string) (*GetRoomStatusInLobbyResult, error) {
-	var r struct {
-		RoomID        string `db:"id" json:"room_id"`
-		RecentMessage string `db:"recent_message" json:"recent_message"`
-	}
-	q := `SELECT id, recent_message FROM room WHERE id = ?`
+func (s *Service) GetRecentMessageByRoomID(roomID string) (*GetRecentMessageByRoomIDResult, error) {
+	var r GetRecentMessageByRoomIDResult
+	q := `SELECT room_id, recent_message FROM room WHERE room_id = ?`
 	err := s.Session.Query(q, []string{}).Bind(roomID).Get(&r)
 	if err != nil {
 		return nil, fmt.Errorf("get room status recent message failed. %v", err)
 	}
+	return &r, nil
+}
 
-	// get read message time
+func (s *Service) GetMessageReadTime(roomID, userID string) (*time.Time, error) {
 	var t time.Time
-	q = `SELECT read_time FROM message_read WHERE room_id = ? AND user_id = ?`
-	err = s.Session.Query(q, []string{}).Bind(roomID, userID).GetRelease(&t)
+	q := `SELECT read_time FROM message_read WHERE room_id = ? AND user_id = ?`
+	err := s.Session.Query(q, []string{}).Bind(roomID, userID).GetRelease(&t)
 	if err != nil {
 		return nil, fmt.Errorf("get room status read time failed. %v", err)
 	}
+	return &t, nil
+}
 
-	// calc message time between read message time
+func (s *Service) GetUnreadMessageCount(roomID string, t time.Time) (*int, error) {
 	var cnt int
-	q = `SELECT COUNT(room_id) AS cnt FROM message WHERE room_id = ? AND sent >= ? AND sent <= toTimestamp(now())`
-	err = s.Session.Query(q, []string{}).Bind(roomID, t).Get(&cnt)
+	q := `SELECT COUNT(room_id) AS cnt FROM message WHERE room_id = ? AND sent >= ? AND sent <= toTimestamp(now())`
+	err := s.Session.Query(q, []string{}).Bind(roomID, t).Get(&cnt)
 	if err != nil {
 		return nil, fmt.Errorf("get message status unread count failed. %v", err)
 	}
-
-	return &GetRoomStatusInLobbyResult{
-		RoomID:        r.RoomID,
-		RecentMessage: r.RecentMessage,
-		UnreadCount:   strconv.Itoa(cnt),
-	}, nil
+	return &cnt, nil
 }

@@ -1,19 +1,20 @@
 package service
 
 import (
-	"github.com/gocql/gocql"
+	"fmt"
+	"github.com/google/uuid"
 	"time"
 )
 
 type GetRoomsByUserIDResult struct {
-	ID            string    `db:"id" json:"id"`
+	RoomID        string    `db:"room_id" json:"room_id"`
 	RecentMessage string    `db:"recent_message" json:"recent_message"`
 	Time          time.Time `db:"time" json:"time"`
 }
 
 func (s *Service) GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult {
-	q := `SELECT id, recent_message, time FROM room WHERE users CONTAINS ?`
-	rooms := s.Session.Query(q, []string{"id", "recent_message", "time"}).Bind(userID).Iter()
+	q := `SELECT room_id, recent_message, time FROM room WHERE users CONTAINS ?`
+	rooms := s.Session.Query(q, []string{"room_id", "recent_message", "time"}).Bind(userID).Iter()
 	defer rooms.Close()
 
 	var result []*GetRoomsByUserIDResult
@@ -27,8 +28,21 @@ func (s *Service) GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult {
 	return result
 }
 
-func (s *Service) CreateRoomMembers() {
-	batch := s.Session.NewBatch(gocql.LoggedBatch)
-	batch.Query(`INSERT INTO room(id, time, users) VALUES ()`)
-	s.Session.ExecuteBatch()
+func (s *Service) CreateRoom(users []string) error {
+	if len(users) < 2 {
+		return fmt.Errorf("minimal user count 2. but: %d", len(users))
+	}
+
+	for _, u := range users {
+		err := uuid.Validate(u)
+		if err != nil {
+			return fmt.Errorf("invalid user id: %v. %s", err, u)
+		}
+	}
+
+	err := s.Session.Query(`INSERT INTO room(id, time, users) VALUES (uuid(), toTimestamp(now()), ?)`, nil).Bind(users).Exec()
+	if err != nil {
+		return fmt.Errorf("create room error. %v", err)
+	}
+	return nil
 }

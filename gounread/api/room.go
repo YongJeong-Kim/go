@@ -38,9 +38,9 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 	var resp []*GetRoomsByUserIDResponse
 	for _, r := range rooms {
 		for _, c := range counts {
-			if r.ID == c.RoomID {
+			if r.RoomID == c.RoomID {
 				resp = append(resp, &GetRoomsByUserIDResponse{
-					RoomID:        r.ID,
+					RoomID:        r.RoomID,
 					Time:          r.Time,
 					RecentMessage: r.RecentMessage,
 					UnreadCount:   strconv.Itoa(c.Count),

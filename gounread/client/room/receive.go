@@ -53,7 +53,12 @@ func main() {
 	json.Unmarshal(data, &result)
 	log.Println(result)
 	for _, r := range result {
-		roomSubject := fmt.Sprintf("%s.%s", "room", r.ID)
+		joinRoomSubject := fmt.Sprintf("join.room.%s", r.RoomID)
+		nc.Subscribe(joinRoomSubject, func(msg *nats.Msg) {
+
+		})
+
+		roomSubject := fmt.Sprintf("%s.%s", "room", r.RoomID)
 		nc.Subscribe(roomSubject, func(msg *nats.Msg) {
 			err = requestReadMessage(r, *userID)
 			if err != nil {
@@ -62,24 +67,24 @@ func main() {
 
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 			log.Println("room: ", msg.Subject)
 			log.Println("receiver: ", *userID)
 			log.Println("sender: ", payload.Sender)
 			log.Println("msg: ", payload.Message)
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 		})
 
-		focusedLobbySubject := fmt.Sprintf("focus.%s.%s", "lobby", r.ID)
+		focusedLobbySubject := fmt.Sprintf("focus.%s.%s", "lobby", r.RoomID)
 		nc.Subscribe(focusedLobbySubject, func(msg *nats.Msg) {
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 			log.Println("lobby: ", msg.Subject)
 			log.Println("receiver: ", *userID)
 			log.Println("sender: ", payload.Sender)
 			log.Println("msg: ", payload.Message)
-			log.Println("---------------------------")
+			log.Println("--------------------------------------------------------")
 		})
 	}
 
@@ -88,7 +93,7 @@ func main() {
 }
 
 func requestReadMessage(r *service.GetRoomsByUserIDResult, userID string) error {
-	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/rooms/"+r.ID+"/read", nil)
+	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/rooms/"+r.RoomID+"/read", nil)
 	if err != nil {
 		log.Fatal(err)
 	}

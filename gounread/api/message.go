@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gounread/service"
 	"net/http"
+	"strconv"
 )
 
 type Payload struct {
@@ -49,7 +50,7 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
-	err = s.Service.SetRecentMessage(reqURI.RoomID, reqJSON.Message)
+	err = s.Service.UpdateRecentMessage(reqURI.RoomID, reqJSON.Message)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -117,6 +118,12 @@ func (s *Server) ReadMessage(c *gin.Context) {
 	c.JSON(http.StatusOK, messages)
 }
 
+type GetRoomStatusInLobbyResponse struct {
+	RoomID        string `json:"room_id"`
+	RecentMessage string `json:"recent_message"`
+	UnreadCount   string `json:"unread_count"`
+}
+
 func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 	var reqURI struct {
 		RoomID string `uri:"room_id" binding:"required"`
@@ -129,7 +136,8 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 	}
 
 	userID := c.Request.Header.Get("user")
-	count, err := s.Service.GetRoomStatusInLobby(reqURI.RoomID, userID)
+
+	recentMessage, err := s.Service.GetRecentMessageByRoomID(reqURI.RoomID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -137,5 +145,27 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, count)
+	t, err := s.Service.GetMessageReadTime(reqURI.RoomID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, *t)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	response := &GetRoomStatusInLobbyResponse{
+		RoomID:        reqURI.RoomID,
+		RecentMessage: recentMessage.RecentMessage,
+		UnreadCount:   strconv.Itoa(*count),
+	}
+
+	c.JSON(http.StatusOK, response)
 }
