@@ -1,25 +1,28 @@
 package service
 
 import (
-	"github.com/scylladb/gocqlx/v2"
+	"gounread/repository"
 	"time"
 )
 
 type Message interface {
-	GetRecentMessageByRoomID(roomID string) (*GetRecentMessageByRoomIDResult, error)
-	GetMessageReadTime(roomID, userID string) (*time.Time, error)
-	GetUnreadMessageCount(roomID string, t time.Time) (*int, error)
-	GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult
-	GetAllRoomsReadMessageTime(userID string) []*GetAllRoomsReadMessageTimeResult
-	GetRoomsUnreadMessageCount(times []*GetAllRoomsReadMessageTimeResult) []*GetRoomsUnreadMessageCountResult
-	ReadMessage(roomID, userID string) error
-	SendMessage(*SendMessageParam) error
+	SendMessage(param *repository.CreateMessageParam) error
 	UpdateRecentMessage(roomID, recentMessage string) error
+	GetRecentMessages(roomID string, limit int) []*repository.GetRecentMessagesResult
+	ReadMessage(roomID, userID string) error
+	GetAllRoomsReadMessageTime(userID string) []*repository.GetAllRoomsReadMessageTimeResult
+	GetRoomsUnreadMessageCount(times []*repository.GetAllRoomsReadMessageTimeResult) ([]*GetRoomsUnreadMessageCountResult, error)
+	GetRecentMessageByRoomID(roomID string) (*repository.GetRecentMessageByRoomIDResult, error)
+	GetMessageReadTime(roomID, userID string) (time.Time, error)
+	GetUnreadMessages(roomID string, t time.Time) []*repository.GetMessagesByRoomIDAndTimeResult
+	GetUnreadMessageCount(roomID string, t time.Time) (*int, error)
 }
 
 type Room interface {
 	CreateRoom(users []string) error
-	GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult
+	GetRoomsByUserID(userID string) []*repository.GetRoomsByUserIDResult
+	GetUsersByRoomID(roomID string) ([]string, error)
+	JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
 }
 
 type Servicer interface {
@@ -28,11 +31,11 @@ type Servicer interface {
 }
 
 type Service struct {
-	Session gocqlx.Session
+	Repo repository.Repositorier
 }
 
-func NewService(session gocqlx.Session) *Service {
+func NewService(repo repository.Repositorier) *Service {
 	return &Service{
-		Session: session,
+		Repo: repo,
 	}
 }

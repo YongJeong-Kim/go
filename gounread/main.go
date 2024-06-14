@@ -6,6 +6,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"gounread/api"
 	"gounread/embedded"
+	"gounread/repository"
 	"gounread/service"
 	"log"
 	"net/http"
@@ -18,7 +19,8 @@ import (
 var interruptSignal = []os.Signal{syscall.SIGTERM, syscall.SIGINT, os.Interrupt}
 
 func main() {
-	var svc service.Servicer = service.NewService(api.NewSession())
+	var repo repository.Repositorier = repository.NewRepository(api.NewSession())
+	var svc service.Servicer = service.NewService(repo)
 	server := api.NewServer(svc)
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignal...)

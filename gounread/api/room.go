@@ -33,7 +33,13 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 	})
 
 	times := s.Service.GetAllRoomsReadMessageTime(req.UserID)
-	counts := s.Service.GetRoomsUnreadMessageCount(times)
+	counts, err := s.Service.GetRoomsUnreadMessageCount(times)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	var resp []*GetRoomsByUserIDResponse
 	for _, r := range rooms {
@@ -50,4 +56,27 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, resp)
+}
+
+func (s *Server) JoinRoom(c *gin.Context) {
+	var req struct {
+		RoomID string `uri:"room_id" json:"room_id"`
+	}
+	if err := c.ShouldBindUri(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	userID := c.Request.Header.Get("user")
+	messages, err := s.Service.JoinRoom(req.RoomID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, messages)
 }

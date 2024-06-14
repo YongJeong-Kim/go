@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"gounread/service"
+	"gounread/repository"
 	"net/http"
 	"strconv"
 )
@@ -37,11 +37,27 @@ func (s *Server) SendMessage(c *gin.Context) {
 	}
 
 	userID := c.Request.Header.Get("user")
-	err := s.Service.SendMessage(&service.SendMessageParam{
-		RoomID:  reqURI.RoomID,
-		Sender:  userID,
-		Message: reqJSON.Message,
-		After:   nil,
+
+	users, err := s.Service.GetUsersByRoomID(reqURI.RoomID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	for i := range users {
+		if userID == users[i] {
+			users = append(users[:i], users[i+1:]...)
+			break
+		}
+	}
+
+	err = s.Service.SendMessage(&repository.CreateMessageParam{
+		RoomID:      reqURI.RoomID,
+		Sender:      userID,
+		Message:     reqJSON.Message,
+		UnreadUsers: users,
 	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -153,7 +169,7 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 		return
 	}
 
-	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, *t)
+	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, t)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

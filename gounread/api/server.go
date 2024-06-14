@@ -45,17 +45,24 @@ func (s *Server) SetupRouter() {
 		roomRouter.POST("/:room_id/send", s.SendMessage)
 		roomRouter.PUT("/:room_id/read", s.ReadMessage)
 		roomRouter.GET("/:room_id", s.GetRoomStatusInLobby)
+		roomRouter.POST("/:room_id/join", s.JoinRoom)
 	}
 	s.Router = r
 }
 
 func NewSession() gocqlx.Session {
+	//hosts := []string{"localhost:19042", "localhost:29042", "localhost:39042"}
+	//hosts := []string{"localhost:19042"}
 	cluster := gocql.NewCluster("localhost:9042")
-	cluster.Keyspace = "keyspace_name"
+	cluster.Keyspace = "keyspace_name_2"
+	cluster.Consistency = gocql.LocalOne
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: "scylla",
 		Password: "1234",
 	}
+	/*cluster.PoolConfig = gocql.PoolConfig{
+		HostSelectionPolicy: gocql.HostPoolHostPolicy(hostpool.New([]string{"localhost:9042"})),
+	}*/
 
 	session, err := gocqlx.WrapSession(cluster.CreateSession())
 	if err != nil {

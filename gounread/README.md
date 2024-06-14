@@ -39,3 +39,14 @@ scylla@cqlsh> LIST ROLES;
 --------+-------+-------+---------
  scylla |  True |  True |        {}
 ```
+
+node status
+```bash 
+$ docker compose exec -it scylla nodetool status
+```
+![image.png](https://github.zendesk.com/attachments/token/OWndFubgMoSeqioHyt36HGFm2/?name=image.png)
+
+thread safe
+`The Java List Index is not thread safe. The set or map collection types are safer for updates.`
+see https://docs.datastax.com/en/cql-oss/3.3/cql/cql_reference/cqlUpdate.html#Updatingalist
+

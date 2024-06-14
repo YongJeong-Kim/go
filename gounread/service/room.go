@@ -3,29 +3,11 @@ package service
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"time"
+	"gounread/repository"
 )
 
-type GetRoomsByUserIDResult struct {
-	RoomID        string    `db:"room_id" json:"room_id"`
-	RecentMessage string    `db:"recent_message" json:"recent_message"`
-	Time          time.Time `db:"time" json:"time"`
-}
-
-func (s *Service) GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult {
-	q := `SELECT room_id, recent_message, time FROM room WHERE users CONTAINS ?`
-	rooms := s.Session.Query(q, []string{"room_id", "recent_message", "time"}).Bind(userID).Iter()
-	defer rooms.Close()
-
-	var result []*GetRoomsByUserIDResult
-	for {
-		var r GetRoomsByUserIDResult
-		if !rooms.StructScan(&r) {
-			break
-		}
-		result = append(result, &r)
-	}
-	return result
+func (s *Service) GetRoomsByUserID(userID string) []*repository.GetRoomsByUserIDResult {
+	return s.Repo.GetRoomsByUserID(userID)
 }
 
 func (s *Service) CreateRoom(users []string) error {
@@ -40,9 +22,43 @@ func (s *Service) CreateRoom(users []string) error {
 		}
 	}
 
-	err := s.Session.Query(`INSERT INTO room(id, time, users) VALUES (uuid(), toTimestamp(now()), ?)`, nil).Bind(users).Exec()
+	err := s.Repo.CreateRoom(users)
 	if err != nil {
-		return fmt.Errorf("create room error. %v", err)
+		return err
 	}
+
 	return nil
+}
+
+func (s *Service) GetUsersByRoomID(roomID string) ([]string, error) {
+	return s.Repo.GetUsersByRoomID(roomID)
+}
+
+func (s *Service) JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error) {
+	previousReadTime, err := s.Repo.GetMessageReadTime(roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// select between prevvious read time and now
+	unreadMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime)
+
+	// update message delete unread user
+	err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
+		UserID:   userID,
+		Messages: unreadMessages,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// new select between previous read time and now
+	updatedMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime)
+
+	// update message read time
+	err = s.Repo.UpdateMessageReadTime(roomID, userID)
+	if err != nil {
+		return nil, err
+	}
+	return updatedMessages, nil
 }

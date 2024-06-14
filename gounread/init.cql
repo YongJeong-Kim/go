@@ -1,9 +1,13 @@
+create keyspace chat with replication = {'class': 'NetworkTopologyStrategy', 'datacenter1': 1};
+create keyspace chat with replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
+
 create table message
 (
   room_id uuid,
   sent    timestamp,
   msg     text,
   sender  uuid,
+  unread  set<uuid>,
   primary key (room_id, sent)
 );
 

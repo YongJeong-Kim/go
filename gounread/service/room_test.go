@@ -8,6 +8,8 @@ import (
 	"github.com/onsi/gomega/types"
 	"gounread/api"
 	"gounread/service"
+	"log"
+	"sync"
 )
 
 var _ = Describe("Room", func() {
@@ -56,4 +58,34 @@ var _ = Describe("Room", func() {
 			BeEquivalentTo(fmt.Errorf("minimal user count 2. but: %d", 1)),
 		),
 	)
+
+	Context("concurrency set data type", func() {
+		It("100", func() {
+			count := 3000
+			var users []string
+			for _ = range count {
+				users = append(users, uuid.NewString())
+			}
+			err := svc.CreateRoom(users)
+			Expect(err).To(Succeed())
+
+			room := svc.GetRoomsByUserID(users[0])
+
+			sess := api.NewSession()
+			q := `UPDATE room SET users = users - ? WHERE room_id = ?`
+			var wg sync.WaitGroup
+			for i := range count {
+				wg.Add(1)
+				go func(ii int) {
+					defer wg.Done()
+					err := sess.Query(q, nil).Bind([]string{users[ii]}, room[0].RoomID).Exec()
+					if err != nil {
+						log.Println(err)
+					}
+					Expect(err).To(Succeed())
+				}(i)
+			}
+			wg.Wait()
+		})
+	})
 })

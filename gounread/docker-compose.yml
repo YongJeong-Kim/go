@@ -3,7 +3,46 @@ version: "3.8"
 services:
   scylla:
     image: scylladb/scylla:latest
-    command: --smp 1 --authenticator PasswordAuthenticator
+    container_name: scylla
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll
     ports:
-      - "9042:9042"
+      - "19042:9042"
     restart: always
+    healthcheck:
+      test: cqlsh -e "SHOW VERSION" || exit 1
+      interval: 15s
+      retries: 10
+      start_period: 30s
+      timeout: 30s
+
+  scylla2:
+    image: scylladb/scylla:latest
+    container_name: scylla2
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll --seeds=scylla
+    ports:
+      - "29042:9042"
+    restart: always
+    healthcheck:
+      test: cqlsh -e "SHOW VERSION" || exit 1
+      interval: 15s
+      retries: 10
+      start_period: 30s
+      timeout: 30s
+    depends_on:
+      - scylla
+
+  scylla3:
+    image: scylladb/scylla:latest
+    container_name: scylla3
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll --seeds=scylla
+    ports:
+      - "39042:9042"
+    restart: always
+    healthcheck:
+      test: cqlsh -e "SHOW VERSION" || exit 1
+      interval: 15s
+      retries: 10
+      start_period: 30s
+      timeout: 30s
+    depends_on:
+      - scylla
