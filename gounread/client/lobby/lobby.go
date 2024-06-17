@@ -7,7 +7,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"gounread/api"
 	"gounread/embedded"
-	"gounread/service"
+	"gounread/repository"
 	"io"
 	"log"
 	"net/http"
@@ -49,7 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var result []*service.GetRoomsByUserIDResult
+	var result []*repository.GetRoomsByUserIDResult
 	json.Unmarshal(data, &result)
 	log.Println(result)
 	for _, r := range result {

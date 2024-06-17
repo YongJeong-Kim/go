@@ -1,4 +1,4 @@
-package gg
+package recv
 
 import (
 	"encoding/json"
@@ -11,26 +11,6 @@ import (
 	"net/http"
 	"strings"
 )
-
-func requestReadMessage(r *repository.GetRoomsByUserIDResult, userID string) error {
-	req, err := http.NewRequest(http.MethodPut, "http://localhost:8080/rooms/"+r.RoomID+"/read", nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	req.Header.Set("user", userID)
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("read messag error. ")
-	}
-	return nil
-}
 
 func GetConnectUserRooms(userID string) []*repository.GetRoomsByUserIDResult {
 	req, err := http.NewRequest(http.MethodPost, "http://localhost:8080/connect", nil)
@@ -79,14 +59,12 @@ func ReadMessage(roomID, userID string) []*repository.GetMessagesByRoomIDAndTime
 
 	var result []*repository.GetMessagesByRoomIDAndTimeResult
 	json.Unmarshal(data, &result)
-	log.Println(result)
 
 	return result
 }
 
 func LoadMessageByRoomID(nc *nats.Conn, roomID, userID string) {
 	messages := ReadMessage(roomID, userID)
-
 	for _, m := range messages {
 		if userID == m.Sender {
 			log.Println("-------------------------------------------------------")
@@ -117,34 +95,9 @@ func EventRoom(nc *nats.Conn, userID string, rooms []*repository.GetRoomsByUserI
 
 		roomSubject := fmt.Sprintf("room.%s", r.RoomID)
 		nc.Subscribe(roomSubject, func(msg *nats.Msg) {
-			/*			err := requestReadMessage(r, userID)
-						if err != nil {
-							log.Fatal(err)
-						}*/
-
 			var payload *api.Payload
 			json.Unmarshal(msg.Data, &payload)
-			/*			log.Println("--------------------------------------------------------")
-						log.Println("room: ", msg.Subject)
-						log.Println("receiver: ", userID)
-						log.Println("sender: ", payload.Sender)
-						log.Println("msg: ", payload.Message)
-						log.Println("unread count: ", payload.UnreadCount)
-						log.Println("--------------------------------------------------------")*/
 
-			/*		if userID == payload.Sender {
-						log.Println("-------------------------------------------------------")
-						log.Printf("%s, %s\n", msg.Subject, payload.Sent)
-						log.Printf("%s <- %s, %d\n", payload.Message, payload.Sender, payload.UnreadCount)
-						log.Println("-------------------------------------------------------")
-					} else {
-						log.Println("-------------------------------------------------------")
-						log.Printf("%s, %s\n", msg.Subject, payload.Sent)
-						log.Printf("%d, %s -> %s\n", payload.UnreadCount, payload.Sender, payload.Message)
-						log.Println("-------------------------------------------------------")
-					}*/
-
-			//call decrease unread message count
 			rm := strings.Split(roomSubject, ".")
 			messages := ReadMessage(rm[1], userID)
 			for _, m := range messages {

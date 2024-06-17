@@ -87,14 +87,6 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
-	/*roomUsers, err := s.Service.GetMessageByRoomIDAndSent(reqURI.RoomID, now)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}*/
-
 	payload := &Payload{
 		RoomID:      reqURI.RoomID,
 		Sender:      c.Request.Header.Get("user"),

@@ -19,7 +19,13 @@ func (s *Server) ConnectClient(c *gin.Context) {
 		return
 	}
 
-	rooms := s.Service.GetRoomsByUserID(userID)
+	rooms, err := s.Service.GetRoomsByUserID(userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	c.JSON(http.StatusOK, rooms)
 }
 
@@ -45,7 +51,6 @@ func (s *Server) SetupRouter() {
 		roomRouter.POST("/:room_id/send", s.SendMessage)
 		roomRouter.PUT("/:room_id/read", s.ReadMessage)
 		roomRouter.GET("/:room_id", s.GetRoomStatusInLobby)
-		roomRouter.POST("/:room_id/join", s.JoinRoom)
 	}
 	s.Router = r
 }

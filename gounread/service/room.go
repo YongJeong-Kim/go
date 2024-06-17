@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (s *Service) GetRoomsByUserID(userID string) []*repository.GetRoomsByUserIDResult {
+func (s *Service) GetRoomsByUserID(userID string) ([]*repository.GetRoomsByUserIDResult, error) {
 	return s.Repo.GetRoomsByUserID(userID)
 }
 

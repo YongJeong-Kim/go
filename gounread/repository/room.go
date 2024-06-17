@@ -12,7 +12,7 @@ type GetRoomsByUserIDResult struct {
 	Time          time.Time `db:"time" json:"time"`
 }
 
-func (r *Repository) GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult {
+func (r *Repository) GetRoomsByUserID(userID string) ([]*GetRoomsByUserIDResult, error) {
 	q := `SELECT room_id, recent_message, time FROM room WHERE users CONTAINS ?`
 	rooms := r.Session.Query(q, []string{"room_id", "recent_message", "time"}).Bind(userID).Iter()
 	defer func() {
@@ -30,7 +30,10 @@ func (r *Repository) GetRoomsByUserID(userID string) []*GetRoomsByUserIDResult {
 		}
 		result = append(result, &r)
 	}
-	return result
+	if result == nil {
+		return nil, fmt.Errorf("user not found. %s", userID)
+	}
+	return result, nil
 }
 
 func (r *Repository) GetUsersByRoomID(roomID string) ([]string, error) {

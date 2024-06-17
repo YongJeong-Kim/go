@@ -3,7 +3,6 @@ package repository
 import (
 	"fmt"
 	"github.com/gocql/gocql"
-	"log"
 	"time"
 )
 
@@ -64,17 +63,6 @@ func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, start time.Time, 
 		result = append(result, &rr)
 	}
 	return result
-}
-
-func (r *Repository) GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error) {
-	var result []string
-	q := `SELECT unread FROM message WHERE room_id = ? AND sent = ? LIMIT 1`
-	err := r.Session.Query(q, nil).Bind(roomID, sent).Get(&result)
-	if err != nil {
-		return nil, fmt.Errorf("get message by room id and sent. ", err)
-	}
-
-	return result, nil
 }
 
 func (r *Repository) GetMessageReadTime(roomID, userID string) (time.Time, error) {
@@ -181,8 +169,7 @@ func (r *Repository) GetMessageCountByRoomIDAndSent(roomID string, readTime time
 	q := `SELECT COUNT(room_id) AS cnt FROM message WHERE room_id = ? AND sent >= ? AND sent <= toTimestamp(now())`
 	err := r.Session.Query(q, []string{}).Bind(roomID, readTime).GetRelease(&cnt)
 	if err != nil {
-		log.Println("get message count error. ", err)
-		return 0, nil
+		return 0, fmt.Errorf("get message count error. %v", err)
 	}
 
 	return cnt, nil

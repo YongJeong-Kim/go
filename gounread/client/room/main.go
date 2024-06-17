@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/nats-io/nats.go"
-	"gounread/client/room/gg"
+	"gounread/client/room/recv"
 	"gounread/embedded"
 	"log"
 	"strings"
@@ -20,9 +20,9 @@ func main() {
 
 	nc := natsConnect(*userID)
 
-	gg.LoadMessageByRoomID(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
-	rooms := gg.GetConnectUserRooms(*userID)
-	gg.EventRoom(nc, *userID, rooms)
+	recv.LoadMessageByRoomID(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
+	rooms := recv.GetConnectUserRooms(*userID)
+	recv.EventRoom(nc, *userID, rooms)
 
 	//eventJoinRoom(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
 

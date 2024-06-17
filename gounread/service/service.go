@@ -8,7 +8,7 @@ import (
 type Message interface {
 	CreateMessage(param *repository.CreateMessageParam) error
 	GetAllRoomsReadMessageTime(userID string) []*repository.GetAllRoomsReadMessageTimeResult
-	GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error)
+	//GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error)
 	GetMessageReadTime(roomID, userID string) (time.Time, error)
 	GetRecentMessageByRoomID(roomID string) (*repository.GetRecentMessageByRoomIDResult, error)
 	GetRecentMessages(roomID string, limit int) []*repository.GetRecentMessagesResult
@@ -22,9 +22,9 @@ type Message interface {
 
 type Room interface {
 	CreateRoom(users []string) error
-	GetRoomsByUserID(userID string) []*repository.GetRoomsByUserIDResult
+	GetRoomsByUserID(userID string) ([]*repository.GetRoomsByUserIDResult, error)
 	GetUsersByRoomID(roomID string) ([]string, error)
-	JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
+	//JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
 }
 
 type Servicer interface {

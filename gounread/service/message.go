@@ -85,9 +85,9 @@ func (s *Service) GetUnreadMessageCount(roomID string, t time.Time) (*int, error
 	return s.Repo.GetUnreadMessageCount(roomID, t)
 }
 
-func (s *Service) GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error) {
+/*func (s *Service) GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error) {
 	return s.Repo.GetMessageByRoomIDAndSent(roomID, sent)
-}
+}*/
 
 func (s *Service) UpdateMessageReadTime(roomID, userID string, t time.Time) error {
 	return s.Repo.UpdateMessageReadTime(roomID, userID, t)
