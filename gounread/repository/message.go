@@ -10,13 +10,14 @@ import (
 type CreateMessageParam struct {
 	RoomID      string
 	Sender      string
+	Sent        time.Time
 	Message     string
 	UnreadUsers []string
 }
 
 func (r *Repository) CreateMessage(param *CreateMessageParam) error {
-	q := `INSERT INTO message (room_id, sender, msg, sent, unread) VALUES (?, ?, ?, toTimestamp(now()), ?)`
-	err := r.Session.Query(q, []string{"asd"}).Bind(param.RoomID, param.Sender, param.Message, param.UnreadUsers).ExecRelease()
+	q := `INSERT INTO message (room_id, sender, msg, sent, unread) VALUES (?, ?, ?, ?, ?)`
+	err := r.Session.Query(q, []string{"asd"}).Bind(param.RoomID, param.Sender, param.Message, param.Sent, param.UnreadUsers).ExecRelease()
 	if err != nil {
 		return fmt.Errorf("send message failed. %v", err)
 	}
@@ -50,9 +51,9 @@ type GetMessagesByRoomIDAndTimeResult struct {
 	Unread []string  `db:"unread" json:"unread"`
 }
 
-func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, t time.Time) []*GetMessagesByRoomIDAndTimeResult {
-	q := `SELECT room_id, sent, msg, sender, unread FROM message WHERE room_id = ? AND sent >= ? AND sent <= toTimestamp(now())`
-	iter := r.Session.Query(q, nil).Bind(roomID, t).Iter()
+func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, start time.Time, end time.Time) []*GetMessagesByRoomIDAndTimeResult {
+	q := `SELECT room_id, sent, msg, sender, unread FROM message WHERE room_id = ? AND sent >= ? AND sent <= ?`
+	iter := r.Session.Query(q, nil).Bind(roomID, start, end).Iter()
 
 	var result []*GetMessagesByRoomIDAndTimeResult
 	for {
@@ -63,6 +64,17 @@ func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, t time.Time) []*G
 		result = append(result, &rr)
 	}
 	return result
+}
+
+func (r *Repository) GetMessageByRoomIDAndSent(roomID string, sent time.Time) ([]string, error) {
+	var result []string
+	q := `SELECT unread FROM message WHERE room_id = ? AND sent = ? LIMIT 1`
+	err := r.Session.Query(q, nil).Bind(roomID, sent).Get(&result)
+	if err != nil {
+		return nil, fmt.Errorf("get message by room id and sent. ", err)
+	}
+
+	return result, nil
 }
 
 func (r *Repository) GetMessageReadTime(roomID, userID string) (time.Time, error) {
@@ -82,7 +94,7 @@ type GetRecentMessageByRoomIDResult struct {
 
 func (r *Repository) GetRecentMessageByRoomID(roomID string) (*GetRecentMessageByRoomIDResult, error) {
 	var rr GetRecentMessageByRoomIDResult
-	q := `SELECT room_id, recent_message FROM room WHERE room_id = ?`
+	q := `SELECT room_id, recent_message FROM room WHERE room_id = ? LIMIT 1`
 	err := r.Session.Query(q, []string{}).Bind(roomID).Get(&rr)
 	if err != nil {
 		return nil, fmt.Errorf("get room status recent message failed. %v", err)
@@ -133,9 +145,9 @@ func (r *Repository) UpdateUnreadMessageBatch(param *UpdateUnreadMessageBatchPar
 	return nil
 }
 
-func (r *Repository) UpdateMessageReadTime(roomID string, userID string) error {
-	q := `INSERT INTO message_read(room_id, user_id, read_time) VALUES (?, ?, toTimestamp(now()))`
-	err := r.Session.Query(q, []string{}).Bind(roomID, userID).ExecRelease()
+func (r *Repository) UpdateMessageReadTime(roomID string, userID string, now time.Time) error {
+	q := `INSERT INTO message_read(room_id, user_id, read_time) VALUES (?, ?, ?)`
+	err := r.Session.Query(q, []string{}).Bind(roomID, userID, now).ExecRelease()
 	if err != nil {
 		return fmt.Errorf("read message failed. %v", err)
 	}

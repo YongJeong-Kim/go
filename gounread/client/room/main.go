@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/nats-io/nats.go"
+	"gounread/client/room/gg"
 	"gounread/embedded"
 	"log"
 	"strings"
@@ -17,22 +18,23 @@ func main() {
 	userID := flag.String("user", user1, "input user id")
 	flag.Parse()
 
-	nc := natsConnect()
+	nc := natsConnect(*userID)
 
-	//rooms := getConnectUserRooms(*userID)
-	//eventRoom(nc, *userID, rooms)
+	gg.LoadMessageByRoomID(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
+	rooms := gg.GetConnectUserRooms(*userID)
+	gg.EventRoom(nc, *userID, rooms)
 
-	eventJoinRoom(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
+	//eventJoinRoom(nc, "01f84cfa-e487-494c-82e5-e75f95ef0573", *userID)
 
 	c := make(chan struct{})
 	<-c
 }
 
-func natsConnect() *nats.Conn {
+func natsConnect(userID string) *nats.Conn {
 	nc, err := nats.Connect(
 		strings.Join(embedded.Servers, ","),
 		nats.ConnectHandler(func(conn *nats.Conn) {
-			log.Println("connected to server")
+			log.Println("connected to server.", userID)
 		}),
 		nats.UserInfo("aaa", "1234"),
 	)

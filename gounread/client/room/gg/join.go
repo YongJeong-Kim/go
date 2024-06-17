@@ -1,4 +1,4 @@
-package main
+package gg
 
 import (
 	"encoding/json"
@@ -28,6 +28,11 @@ func eventJoinRoom(nc *nats.Conn, roomID, userID string) {
 			}
 
 		}
+	})
+
+	readedSubject := fmt.Sprintf("joined.room.%s", roomID)
+	nc.Subscribe(readedSubject, func(msg *nats.Msg) {
+		// decrease unread message count
 	})
 }
 

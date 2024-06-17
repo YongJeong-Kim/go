@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"gounread/repository"
+	"time"
 )
 
 func (s *Service) GetRoomsByUserID(userID string) []*repository.GetRoomsByUserIDResult {
@@ -41,7 +42,8 @@ func (s *Service) JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRo
 	}
 
 	// select between prevvious read time and now
-	unreadMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime)
+	now := time.Now().UTC()
+	unreadMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime, now)
 
 	// update message delete unread user
 	err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
@@ -53,10 +55,10 @@ func (s *Service) JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRo
 	}
 
 	// new select between previous read time and now
-	updatedMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime)
+	updatedMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime, now)
 
 	// update message read time
-	err = s.Repo.UpdateMessageReadTime(roomID, userID)
+	err = s.Repo.UpdateMessageReadTime(roomID, userID, now)
 	if err != nil {
 		return nil, err
 	}

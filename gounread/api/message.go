@@ -7,12 +7,15 @@ import (
 	"gounread/repository"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type Payload struct {
-	RoomID  string `json:"room_id"`
-	Sender  string `json:"sender"`
-	Message string `json:"message"`
+	RoomID      string    `json:"room_id"`
+	Sender      string    `json:"sender"`
+	Sent        time.Time `json:"sent"`
+	Message     string    `json:"message"`
+	UnreadCount int       `json:"unread_count"`
 }
 
 func (s *Server) SendMessage(c *gin.Context) {
@@ -53,9 +56,11 @@ func (s *Server) SendMessage(c *gin.Context) {
 		}
 	}
 
-	err = s.Service.SendMessage(&repository.CreateMessageParam{
+	now := time.Now().UTC()
+	err = s.Service.CreateMessage(&repository.CreateMessageParam{
 		RoomID:      reqURI.RoomID,
 		Sender:      userID,
+		Sent:        now,
 		Message:     reqJSON.Message,
 		UnreadUsers: users,
 	})
@@ -74,10 +79,28 @@ func (s *Server) SendMessage(c *gin.Context) {
 		return
 	}
 
+	err = s.Service.UpdateMessageReadTime(reqURI.RoomID, userID, now)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	/*roomUsers, err := s.Service.GetMessageByRoomIDAndSent(reqURI.RoomID, now)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}*/
+
 	payload := &Payload{
-		RoomID:  reqURI.RoomID,
-		Sender:  c.Request.Header.Get("user"),
-		Message: reqJSON.Message,
+		RoomID:      reqURI.RoomID,
+		Sender:      c.Request.Header.Get("user"),
+		Sent:        now,
+		Message:     reqJSON.Message,
+		UnreadCount: len(users),
 	}
 	b, _ := json.Marshal(payload)
 
@@ -122,7 +145,7 @@ func (s *Server) ReadMessage(c *gin.Context) {
 
 	userID := c.Request.Header.Get("user")
 
-	err := s.Service.ReadMessage(reqURI.RoomID, userID)
+	start, end, err := s.Service.ReadMessage(reqURI.RoomID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -130,7 +153,14 @@ func (s *Server) ReadMessage(c *gin.Context) {
 		return
 	}
 
-	messages := s.Service.GetRecentMessages(reqURI.RoomID, 10)
+	messages := s.Service.GetUnreadMessages(reqURI.RoomID, start, end)
+	if len(messages) == 0 {
+		recentMessages := s.Service.GetRecentMessages(reqURI.RoomID, 10)
+		c.JSON(http.StatusOK, recentMessages)
+		return
+	}
+
+	//s.Nats.Publish("", []byte("1"))
 	c.JSON(http.StatusOK, messages)
 }
 
