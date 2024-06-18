@@ -47,6 +47,11 @@ func (s *Server) SetupRouter() {
 	r.GET("/users/:user_id/rooms", s.GetRoomsByUserID)
 	r.POST("/connect", s.ConnectClient)
 
+	r.GET("/test", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "ok",
+		})
+	})
 	roomRouter := r.Group("/rooms")
 	{
 		roomRouter.POST("/:room_id/send", s.SendMessage)

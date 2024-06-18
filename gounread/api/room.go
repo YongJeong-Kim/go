@@ -11,7 +11,7 @@ import (
 
 func (s *Server) CreateRoom(c *gin.Context) {
 	var req struct {
-		UserIDs []string `json:"user_ids"`
+		UserIDs []string `json:"user_ids" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
