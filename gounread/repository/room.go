@@ -47,9 +47,9 @@ func (r *Repository) GetUsersByRoomID(roomID string) ([]string, error) {
 	return result, nil
 }
 
-func (r *Repository) CreateRoom(users []string) error {
-	q := `INSERT INTO room(room_id, time, users) VALUES (uuid(), toTimestamp(now()), ?)`
-	err := r.Session.Query(q, nil).Bind(users).Exec()
+func (r *Repository) CreateRoom(roomID string, users []string) error {
+	q := `INSERT INTO room(room_id, time, users) VALUES (?, toTimestamp(now()), ?)`
+	err := r.Session.Query(q, nil).Bind(roomID, users).Exec()
 	if err != nil {
 		return fmt.Errorf("create room error. %v", err)
 	}

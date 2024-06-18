@@ -134,8 +134,10 @@ func (r *Repository) UpdateUnreadMessageBatch(param *UpdateUnreadMessageBatchPar
 }
 
 func (r *Repository) UpdateMessageReadTime(roomID string, userID string, now time.Time) error {
-	q := `INSERT INTO message_read(room_id, user_id, read_time) VALUES (?, ?, ?)`
-	err := r.Session.Query(q, []string{}).Bind(roomID, userID, now).ExecRelease()
+	//q := `INSERT INTO message_read(room_id, user_id, read_time) VALUES (?, ?, ?)`
+	q := `UPDATE message_read SET read_time = ? WHERE room_id = ? AND user_id = ?`
+	//err := r.Session.Query(q, []string{}).Bind(roomID, userID, now).ExecRelease()
+	err := r.Session.Query(q, []string{}).Bind(now, roomID, userID).ExecRelease()
 	if err != nil {
 		return fmt.Errorf("read message failed. %v", err)
 	}
@@ -143,13 +145,14 @@ func (r *Repository) UpdateMessageReadTime(roomID string, userID string, now tim
 }
 
 type GetRecentMessagesResult struct {
+	RoomID string    `db:"room_id" json:"room_id"`
 	Sent   time.Time `db:"sent" json:"sent"`
 	Msg    string    `db:"msg" json:"msg"`
 	Sender string    `db:"sender" json:"sender"`
 }
 
 func (r *Repository) GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult {
-	q := `SELECT sent, msg, sender FROM message WHERE room_id = ? LIMIT ?`
+	q := `SELECT room_id, sent, msg, sender FROM message WHERE room_id = ? LIMIT ?`
 	messages := r.Session.Query(q, []string{}).Bind(roomID, limit).Iter()
 
 	var result []*GetRecentMessagesResult

@@ -24,7 +24,6 @@ type Room interface {
 	CreateRoom(users []string) error
 	GetRoomsByUserID(userID string) ([]*repository.GetRoomsByUserIDResult, error)
 	GetUsersByRoomID(roomID string) ([]string, error)
-	//JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
 }
 
 type Servicer interface {

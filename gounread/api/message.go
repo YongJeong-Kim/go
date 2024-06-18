@@ -11,11 +11,11 @@ import (
 )
 
 type Payload struct {
-	RoomID      string    `json:"room_id"`
-	Sender      string    `json:"sender"`
-	Sent        time.Time `json:"sent"`
-	Message     string    `json:"message"`
-	UnreadCount int       `json:"unread_count"`
+	RoomID  string    `json:"room_id"`
+	Sender  string    `json:"sender"`
+	Sent    time.Time `json:"sent"`
+	Message string    `json:"message"`
+	Unread  []string  `json:"unread"`
 }
 
 func (s *Server) SendMessage(c *gin.Context) {
@@ -88,11 +88,11 @@ func (s *Server) SendMessage(c *gin.Context) {
 	}
 
 	payload := &Payload{
-		RoomID:      reqURI.RoomID,
-		Sender:      c.Request.Header.Get("user"),
-		Sent:        now,
-		Message:     reqJSON.Message,
-		UnreadCount: len(users),
+		RoomID:  reqURI.RoomID,
+		Sender:  c.Request.Header.Get("user"),
+		Sent:    now,
+		Message: reqJSON.Message,
+		Unread:  users,
 	}
 	b, _ := json.Marshal(payload)
 

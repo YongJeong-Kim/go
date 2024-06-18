@@ -26,13 +26,13 @@ var _ = Describe("Room", func() {
 	When("create room", func() {
 		Context("create room with 5 users", func() {
 			It("ok", func() {
-				err := repo.CreateRoom(users)
+				err := repo.CreateRoom(uuid.NewString(), users)
 				Expect(err).To(Succeed())
 			})
 
 			It("invalid user id", func() {
 				users[0] = "invalid user id"
-				err := repo.CreateRoom(users)
+				err := repo.CreateRoom(uuid.NewString(), users)
 				Expect(err).To(BeEquivalentTo(fmt.Errorf("create room error. invalid UUID \"invalid user id\"")))
 			})
 		})
@@ -41,7 +41,7 @@ var _ = Describe("Room", func() {
 	When("get rooms by user id", func() {
 		Context("get rooms by 5 user ids", func() {
 			BeforeEach(func() {
-				err := repo.CreateRoom(users)
+				err := repo.CreateRoom(uuid.NewString(), users)
 				Expect(err).Should(BeNil())
 			})
 
@@ -70,7 +70,7 @@ var _ = Describe("Room", func() {
 
 	When("get users by room id", func() {
 		BeforeEach(func() {
-			err := repo.CreateRoom(users)
+			err := repo.CreateRoom(uuid.NewString(), users)
 			Expect(err).To(Succeed())
 		})
 
@@ -86,15 +86,8 @@ var _ = Describe("Room", func() {
 
 						usersInRoom, err := repo.GetUsersByRoomID(r.RoomID)
 						Expect(err).Should(BeNil())
-						Expect(len(usersInRoom)).To(Equal(5))
-						/*us := util.Filter(usersInRoom, func(s string) bool {
-							return u == s
-						})*/
+						Expect(usersInRoom).To(HaveLen(5))
 						Expect(usersInRoom).Should(ContainElement(u))
-						/*Expect(len(us)).To(Equal(1))
-						util.ForEach(us, func(s string) {
-							Expect(s).To(Equal(u))
-						})*/
 					}
 				}
 			})

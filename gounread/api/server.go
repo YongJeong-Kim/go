@@ -8,6 +8,7 @@ import (
 	"gounread/service"
 	"log"
 	"net/http"
+	"time"
 )
 
 func (s *Server) ConnectClient(c *gin.Context) {
@@ -51,6 +52,7 @@ func (s *Server) SetupRouter() {
 		roomRouter.POST("/:room_id/send", s.SendMessage)
 		roomRouter.PUT("/:room_id/read", s.ReadMessage)
 		roomRouter.GET("/:room_id", s.GetRoomStatusInLobby)
+		roomRouter.POST("", s.CreateRoom)
 	}
 	s.Router = r
 }
@@ -65,6 +67,12 @@ func NewSession() gocqlx.Session {
 		Username: "scylla",
 		Password: "1234",
 	}
+	cluster.RetryPolicy = &gocql.ExponentialBackoffRetryPolicy{
+		Min:        time.Second,
+		Max:        10 * time.Second,
+		NumRetries: 5,
+	}
+	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(gocql.RoundRobinHostPolicy())
 	/*cluster.PoolConfig = gocql.PoolConfig{
 		HostSelectionPolicy: gocql.HostPoolHostPolicy(hostpool.New([]string{"localhost:9042"})),
 	}*/

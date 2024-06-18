@@ -2,11 +2,41 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"gounread/util"
 	"net/http"
 	"sort"
 	"strconv"
 	"time"
 )
+
+func (s *Server) CreateRoom(c *gin.Context) {
+	var req struct {
+		UserIDs []string `json:"user_ids"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userID := c.Request.Header.Get("user")
+	filtered := util.Filter(req.UserIDs, func(u string) bool {
+		return userID == u
+	})
+	if len(filtered) > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "must be exclude yourself in invite user list",
+		})
+		return
+	}
+
+	req.UserIDs = append(req.UserIDs, userID)
+	err := s.Service.CreateRoom(req.UserIDs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Status(http.StatusCreated)
+}
 
 type GetRoomsByUserIDResponse struct {
 	RoomID        string    `json:"room_id"`

@@ -23,9 +23,18 @@ func (s *Service) CreateRoom(users []string) error {
 		}
 	}
 
-	err := s.Repo.CreateRoom(users)
+	newRoomID := uuid.NewString()
+	err := s.Repo.CreateRoom(newRoomID, users)
 	if err != nil {
 		return err
+	}
+
+	now := time.Now().UTC()
+	for _, u := range users {
+		err := s.Repo.UpdateMessageReadTime(newRoomID, u, now)
+		if err != nil {
+			return fmt.Errorf("create room update message read time failed. %v", err)
+		}
 	}
 
 	return nil
@@ -33,34 +42,4 @@ func (s *Service) CreateRoom(users []string) error {
 
 func (s *Service) GetUsersByRoomID(roomID string) ([]string, error) {
 	return s.Repo.GetUsersByRoomID(roomID)
-}
-
-func (s *Service) JoinRoom(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error) {
-	previousReadTime, err := s.Repo.GetMessageReadTime(roomID, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	// select between prevvious read time and now
-	now := time.Now().UTC()
-	unreadMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime, now)
-
-	// update message delete unread user
-	err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
-		UserID:   userID,
-		Messages: unreadMessages,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// new select between previous read time and now
-	updatedMessages := s.Repo.GetMessagesByRoomIDAndTime(roomID, previousReadTime, now)
-
-	// update message read time
-	err = s.Repo.UpdateMessageReadTime(roomID, userID, now)
-	if err != nil {
-		return nil, err
-	}
-	return updatedMessages, nil
 }

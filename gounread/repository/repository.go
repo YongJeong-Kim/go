@@ -20,7 +20,7 @@ type Message interface {
 }
 
 type Room interface {
-	CreateRoom(users []string) error
+	CreateRoom(roomID string, users []string) error
 	GetRoomsByUserID(userID string) ([]*GetRoomsByUserIDResult, error)
 	GetUsersByRoomID(roomID string) ([]string, error)
 }
