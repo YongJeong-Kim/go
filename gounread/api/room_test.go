@@ -26,8 +26,7 @@ var _ = Describe("Room", func() {
 	)
 	BeforeEach(func() {
 		gin.SetMode(gin.TestMode)
-		var t gomock.TestReporter
-		ctrl := gomock.NewController(t)
+		ctrl := gomock.NewController(GinkgoT())
 		defer ctrl.Finish()
 
 		recorder = httptest.NewRecorder()

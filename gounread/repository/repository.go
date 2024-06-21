@@ -12,7 +12,7 @@ type Message interface {
 	GetMessageCountByRoomIDAndSent(roomID string, readTime time.Time) (int, error)
 	GetRecentMessageByRoomID(roomID string) (*GetRecentMessageByRoomIDResult, error)
 	GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult
-	GetUnreadMessageCount(roomID string, t time.Time) (*int, error)
+	GetUnreadMessageCount(roomID string, t time.Time) (int, error)
 	GetMessagesByRoomIDAndTime(roomID string, start time.Time, end time.Time) []*GetMessagesByRoomIDAndTimeResult
 	UpdateMessageReadTime(roomID string, userID string, now time.Time) error
 	UpdateRecentMessage(roomID, recentMessage string) error

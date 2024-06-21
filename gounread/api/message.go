@@ -152,7 +152,6 @@ func (s *Server) ReadMessage(c *gin.Context) {
 		return
 	}
 
-	//s.Nats.Publish("", []byte("1"))
 	c.JSON(http.StatusOK, messages)
 }
 
@@ -183,15 +182,15 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 		return
 	}
 
-	t, err := s.Service.GetMessageReadTime(reqURI.RoomID, userID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
+	/*	t, err := s.Service.GetMessageReadTime(reqURI.RoomID, userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}*/
 
-	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, t)
+	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -202,7 +201,7 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 	response := &GetRoomStatusInLobbyResponse{
 		RoomID:        reqURI.RoomID,
 		RecentMessage: recentMessage.RecentMessage,
-		UnreadCount:   strconv.Itoa(*count),
+		UnreadCount:   strconv.Itoa(count),
 	}
 
 	c.JSON(http.StatusOK, response)

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"gounread/api"
 	"gounread/repository"
+	"time"
 )
 
 var _ = Describe("Room", func() {
@@ -26,8 +27,7 @@ var _ = Describe("Room", func() {
 	When("create room", func() {
 		Context("create room with 5 users", func() {
 			It("ok", func() {
-				err := repo.CreateRoom(uuid.NewString(), users)
-				Expect(err).To(Succeed())
+				createRoomForTest(repo, uuid.NewString(), uuid.NewString(), users)
 			})
 
 			It("invalid user id", func() {
@@ -110,3 +110,19 @@ var _ = Describe("Room", func() {
 		})
 	})
 })
+
+func createRoomForTest(repo repository.Repositorier, roomID, owner string, inviteUsers []string) {
+	allUsers := append(inviteUsers, owner)
+	err := repo.CreateRoom(roomID, allUsers)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	usersInRoom, err := repo.GetUsersByRoomID(roomID)
+	Expect(err).ShouldNot(HaveOccurred())
+	Expect(usersInRoom).To(HaveLen(len(allUsers)))
+
+	now := time.Now().UTC()
+	for _, u := range allUsers {
+		err = repo.UpdateMessageReadTime(roomID, u, now)
+		Expect(err).ShouldNot(HaveOccurred())
+	}
+}
