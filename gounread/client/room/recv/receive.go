@@ -28,8 +28,8 @@ func main() {
 
 	nc := natsConnect(*roomID, *userID)
 
-	loadMessageByRoomID(nc, *roomID, *userID)
 	rooms := getConnectUserRooms(*userID)
+	loadMessageByRoomID(nc, *roomID, *userID)
 	eventRoom(nc, *userID, rooms)
 
 	c := make(chan struct{})
@@ -73,6 +73,9 @@ func getConnectUserRooms(userID string) []*repository.GetRoomsByUserIDResult {
 	var result []*repository.GetRoomsByUserIDResult
 	json.Unmarshal(data, &result)
 	log.Println(result)
+	for _, r := range result {
+		log.Printf("joined room: %s", r.RoomID)
+	}
 
 	return result
 }

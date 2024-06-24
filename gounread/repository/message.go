@@ -117,10 +117,12 @@ type UpdateUnreadMessageBatchParam struct {
 }
 
 func (r *Repository) UpdateUnreadMessageBatch(param *UpdateUnreadMessageBatchParam) error {
+	// not working range update
 	q := `UPDATE message SET unread = unread - ? WHERE room_id = ? AND sent = ?`
 	// Be careful. batching queries with different partition keys, anti-pattern -> poor performance
 	// https://docs.datastax.com/en/cql/3.3/cql/cql_using/useBatchBadExample.html
 	// In this case, same partition key
+
 	batch := r.Session.NewBatch(gocql.LoggedBatch)
 	for _, m := range param.Messages {
 		batch.Query(q, []string{param.UserID}, m.RoomID, m.Sent)
@@ -134,12 +136,10 @@ func (r *Repository) UpdateUnreadMessageBatch(param *UpdateUnreadMessageBatchPar
 }
 
 func (r *Repository) UpdateMessageReadTime(roomID string, userID string, now time.Time) error {
-	//q := `INSERT INTO message_read(room_id, user_id, read_time) VALUES (?, ?, ?)`
 	q := `UPDATE message_read SET read_time = ? WHERE room_id = ? AND user_id = ?`
-	//err := r.Session.Query(q, []string{}).Bind(roomID, userID, now).ExecRelease()
-	err := r.Session.Query(q, []string{}).Bind(now, roomID, userID).ExecRelease()
+	err := r.Session.Query(q, nil).Bind(now, roomID, userID).ExecRelease()
 	if err != nil {
-		return fmt.Errorf("read message failed. %v", err)
+		return fmt.Errorf("update message read time failed. %v", err)
 	}
 	return nil
 }

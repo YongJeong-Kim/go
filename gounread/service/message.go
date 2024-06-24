@@ -26,18 +26,19 @@ func (s *Service) ReadMessage(roomID, userID string) (time.Time, time.Time, erro
 
 	now := time.Now().UTC()
 	messages := s.Repo.GetMessagesByRoomIDAndTime(roomID, t, now)
+	if messages != nil {
+		err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
+			UserID:   userID,
+			Messages: messages,
+		})
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("UpdateUnreadMessageBatch error from ReadMessage. %v", err)
+		}
 
-	err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
-		UserID:   userID,
-		Messages: messages,
-	})
-	if err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("UpdateUnreadMessageBatch error from ReadMessage. %v", err)
-	}
-
-	err = s.Repo.UpdateMessageReadTime(roomID, userID, now)
-	if err != nil {
-		return time.Time{}, time.Time{}, fmt.Errorf("UpdateMessageReadTime error from ReadMessage. %v", err)
+		err = s.Repo.UpdateMessageReadTime(roomID, userID, now)
+		if err != nil {
+			return time.Time{}, time.Time{}, fmt.Errorf("UpdateMessageReadTime error from ReadMessage. %v", err)
+		}
 	}
 
 	return t, now, nil

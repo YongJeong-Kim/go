@@ -37,13 +37,15 @@ var _ = Describe("Message", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "dd",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "dd",
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				count, err := repo.GetMessageCountByRoomIDAndSent(roomID, sent)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -91,13 +93,15 @@ var _ = Describe("Message", func() {
 		Context("", func() {
 			It("ok", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        time.Now().UTC(),
-					Message:     "asdfasdf",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdfasdf",
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				t, err := repo.GetMessageReadTime(roomID, inviteUsers[0])
 				Expect(err).ShouldNot(HaveOccurred())
@@ -109,13 +113,15 @@ var _ = Describe("Message", func() {
 
 			It("unread message not found", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        time.Now().UTC(),
-					Message:     "asdfasdf",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdfasdf",
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				err := repo.UpdateMessageReadTime(roomID, inviteUsers[0], time.Now().UTC())
 				Expect(err).ShouldNot(HaveOccurred())
@@ -129,13 +135,15 @@ var _ = Describe("Message", func() {
 
 			It("invalid room id", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        time.Now().UTC(),
-					Message:     "asdfasdf",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdfasdf",
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				t, err := repo.GetMessageReadTime(roomID, inviteUsers[0])
 				Expect(err).ShouldNot(HaveOccurred())
@@ -156,13 +164,15 @@ var _ = Describe("Message", func() {
 				var times []time.Time
 				for range sendCount {
 					n := time.Now().UTC()
-					createMessageForTest(repo, &repository.CreateMessageParam{
-						RoomID:      roomID,
-						Sender:      sender,
-						Sent:        n,
-						Message:     "asdf",
-						UnreadUsers: inviteUsers,
-					}, 1)
+					createMessageForTest(repo, []*repository.CreateMessageParam{
+						{
+							RoomID:      roomID,
+							Sender:      sender,
+							Sent:        n,
+							Message:     "asdf",
+							UnreadUsers: inviteUsers,
+						},
+					})
 					times = append(times, n)
 				}
 				sort.Slice(times, func(i, j int) bool {
@@ -186,13 +196,15 @@ var _ = Describe("Message", func() {
 			It("room not found", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				start := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      uuid.NewString(),
-					Sender:      sender,
-					Sent:        time.Now().UTC(),
-					Message:     "asdf",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      uuid.NewString(),
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdf",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				end := time.Now().UTC()
 				messages := repo.GetMessagesByRoomIDAndTime(roomID, start, end)
 				Expect(messages).To(BeZero())
@@ -201,13 +213,15 @@ var _ = Describe("Message", func() {
 			It("invalid room id", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				start := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        time.Now().UTC(),
-					Message:     "asdf",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdf",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				end := time.Now().UTC()
 				messages := repo.GetMessagesByRoomIDAndTime("invalid room id", start, end)
 				Expect(messages).To(BeNil())
@@ -221,13 +235,15 @@ var _ = Describe("Message", func() {
 			It("yourself", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				err := repo.UpdateMessageReadTime(roomID, sender, sent)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -239,13 +255,15 @@ var _ = Describe("Message", func() {
 			It("read user", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				u1 := inviteUsers[0]
 				err := repo.UpdateMessageReadTime(roomID, u1, sent)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -258,13 +276,15 @@ var _ = Describe("Message", func() {
 			It("invalid room id", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				err := repo.UpdateMessageReadTime(roomID, sender, sent)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -276,13 +296,15 @@ var _ = Describe("Message", func() {
 			It("room not found", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				err := repo.UpdateMessageReadTime(roomID, sender, sent)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -294,13 +316,15 @@ var _ = Describe("Message", func() {
 			It("invalid user id", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				err := repo.UpdateMessageReadTime(roomID, sender, sent)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -312,13 +336,15 @@ var _ = Describe("Message", func() {
 			It("user not found", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aaa",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aaa",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				err := repo.UpdateMessageReadTime(roomID, sender, sent)
 				Expect(err).ShouldNot(HaveOccurred())
 
@@ -335,13 +361,15 @@ var _ = Describe("Message", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
 				msg := "asdfasdf"
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     msg,
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				recent, err := repo.GetRecentMessageByRoomID(roomID)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -355,13 +383,15 @@ var _ = Describe("Message", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
 				msg := "asdfasdf"
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     msg,
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				recent, err := repo.GetRecentMessageByRoomID("invalid room id")
 				Expect(err).To(MatchError(fmt.Errorf("get room recent message failed. invalid UUID \"invalid room id\"")))
@@ -372,13 +402,15 @@ var _ = Describe("Message", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
 				msg := "asdfasdf"
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     msg,
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+				})
 
 				recent, err := repo.GetRecentMessageByRoomID(uuid.NewString())
 				Expect(err).To(MatchError(fmt.Errorf("get room recent message failed. not found")))
@@ -392,13 +424,15 @@ var _ = Describe("Message", func() {
 			It("ok", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aqaq",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aqaq",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				updateReadTime := time.Now().UTC()
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -415,13 +449,15 @@ var _ = Describe("Message", func() {
 			It("user not found", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aqaq",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aqaq",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				updateReadTime := time.Now().UTC()
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -434,13 +470,15 @@ var _ = Describe("Message", func() {
 			It("invalid user id", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
-				createMessageForTest(repo, &repository.CreateMessageParam{
-					RoomID:      roomID,
-					Sender:      sender,
-					Sent:        sent,
-					Message:     "aqaq",
-					UnreadUsers: inviteUsers,
-				}, 1)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     "aqaq",
+						UnreadUsers: inviteUsers,
+					},
+				})
 				updateReadTime := time.Now().UTC()
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
@@ -452,51 +490,247 @@ var _ = Describe("Message", func() {
 		})
 	})
 
-	/*When("update unread message batch", func() {
+	When("update unread message batch", func() {
 		Context("ok", func() {
 			It("ok", func() {
 				createRoomForTest(repo, roomID, sender, inviteUsers)
 				sent := time.Now().UTC()
+				msg := "aqaq"
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        sent,
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+				})
+				u1 := inviteUsers[0]
+				readTime, err := repo.GetMessageReadTime(roomID, u1)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				updateReadTime := time.Now().UTC()
+				err = repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
+					UserID:   u1,
+					Messages: repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime),
+				})
+				Expect(err).ShouldNot(HaveOccurred())
+
+				err = repo.UpdateMessageReadTime(roomID, u1, updateReadTime)
+				Expect(err).ShouldNot(HaveOccurred())
+
+				messages := repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime)
+				for _, m := range messages {
+					Expect(m).To(PointTo(MatchAllFields(Fields{
+						"RoomID": Equal(roomID),
+						"Sent":   BeTemporally("~", sent, 500*time.Millisecond),
+						"Sender": Equal(sender),
+						"Unread": ContainElement(inviteUsers[1]),
+						"Msg":    Equal(msg),
+					})))
+				}
+			})
+		})
+
+		Context("fail", func() {
+			// how to occur err
+			/*It("invalid room id", func() {
+				createRoomForTest(repo, roomID, sender, inviteUsers)
 				createMessageForTest(repo, &repository.CreateMessageParam{
 					RoomID:      roomID,
 					Sender:      sender,
-					Sent:        sent,
+					Sent:        time.Now().UTC(),
 					Message:     "aqaq",
 					UnreadUsers: inviteUsers,
 				}, 5)
-				updateReadTime := time.Now().UTC()
 				u1 := inviteUsers[0]
-				err := repo.UpdateMessageReadTime(roomID, u1, updateReadTime)
+				readTime, err := repo.GetMessageReadTime(roomID, u1)
 				Expect(err).ShouldNot(HaveOccurred())
 
 				err = repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
 					UserID:   u1,
-					Messages: repo.GetMessagesByRoomIDAndTime(roomID, updateReadTime, time.Now().UTC()),
+					Messages: repo.GetMessagesByRoomIDAndTime("", readTime, time.Now().UTC()),
 				})
-				Expect(err).ShouldNot(HaveOccurred())
+				Expect(err).To(MatchError(fmt.Errorf("read message batch failed. invalid UUID \"invalid room id\"")))
+			})*/
+		})
+	})
 
-				err := repo.UpdateMessageReadTime(roomID, u1, updateReadTime)
-				Expect(err).ShouldNot(HaveOccurred())
+	When("update message read time", func() {
+		It("ok", func() {
+			createRoomForTest(repo, roomID, sender, inviteUsers)
+			createMessageForTest(repo, []*repository.CreateMessageParam{
+				{
+					RoomID:      roomID,
+					Sender:      sender,
+					Sent:        time.Now(),
+					Message:     "aass",
+					UnreadUsers: inviteUsers,
+				},
+			})
 
-				repo.GetMessagesByRoomIDAndTime(roomID, start, end)
+			readTime := time.Now().UTC()
+			u1 := inviteUsers[0]
+			err := repo.UpdateMessageReadTime(roomID, u1, readTime)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			checkReadTime, err := repo.GetMessageReadTime(roomID, u1)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(checkReadTime).To(BeTemporally("~", readTime, time.Millisecond))
+		})
+
+		Context("fail", func() {
+			It("invalid room id", func() {
+				createRoomForTest(repo, roomID, sender, inviteUsers)
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now(),
+						Message:     "aass",
+						UnreadUsers: inviteUsers,
+					},
+				})
+
+				err := repo.UpdateMessageReadTime("invalid room id", inviteUsers[0], time.Now().UTC())
+				Expect(err).To(MatchError("update message read time failed. invalid UUID \"invalid room id\""))
 			})
 		})
+	})
 
-		Context("", func() {
+	When("get recent messages", func() {
+		It("ok", func() {
+			createRoomForTest(repo, roomID, sender, inviteUsers)
+			msg := "asdasdihw"
+			t1, t2 := time.Now().UTC(), time.Now().UTC()
+			params := []*repository.CreateMessageParam{
+				{
+					RoomID:      roomID,
+					Sender:      sender,
+					Sent:        t1,
+					Message:     msg,
+					UnreadUsers: inviteUsers,
+				},
+				{
+					RoomID:      roomID,
+					Sender:      sender,
+					Sent:        t2,
+					Message:     msg,
+					UnreadUsers: inviteUsers,
+				},
+			}
+			createMessageForTest(repo, params)
 
+			messages := repo.GetRecentMessages(roomID, len(params))
+			for _, m := range messages {
+				Expect(m).To(PointTo(MatchAllFields(Fields{
+					"RoomID": Equal(roomID),
+					"Sender": Equal(sender),
+					"Msg":    Equal(msg),
+					"Sent":   BeTemporally("~", t1, 10*time.Millisecond),
+				})))
+			}
 		})
-	})*/
+
+		Context("fail", func() {
+			It("invalid room id", func() {
+				createRoomForTest(repo, roomID, sender, inviteUsers)
+				params := []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdasdihw",
+						UnreadUsers: inviteUsers,
+					},
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     "asdasdihw",
+						UnreadUsers: inviteUsers,
+					},
+				}
+				createMessageForTest(repo, params)
+
+				messages := repo.GetRecentMessages("invalid room id", len(params))
+				Expect(messages).To(BeNil())
+				Expect(messages).To(BeEmpty())
+			})
+		})
+	})
+
+	When("get message count by room id and sent", func() {
+		It("ok", func() {
+			createRoomForTest(repo, roomID, sender, inviteUsers)
+			msg := "asdasdihw"
+			params := []*repository.CreateMessageParam{
+				{
+					RoomID:      roomID,
+					Sender:      sender,
+					Sent:        time.Now().UTC(),
+					Message:     msg,
+					UnreadUsers: inviteUsers,
+				},
+				{
+					RoomID:      roomID,
+					Sender:      sender,
+					Sent:        time.Now().UTC().Add(10 * time.Millisecond),
+					Message:     msg,
+					UnreadUsers: inviteUsers,
+				},
+			}
+			createMessageForTest(repo, params)
+
+			readTime, err := repo.GetMessageReadTime(roomID, inviteUsers[0])
+			Expect(err).ShouldNot(HaveOccurred())
+
+			messageCount, err := repo.GetMessageCountByRoomIDAndSent(roomID, readTime)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(messageCount).To(Equal(len(params)))
+		})
+
+		Context("fail", func() {
+			It("invalid room id", func() {
+				createRoomForTest(repo, roomID, sender, inviteUsers)
+				msg := "asdasdihw"
+				sent := time.Now().UTC()
+				createMessageForTest(repo, []*repository.CreateMessageParam{
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+					{
+						RoomID:      roomID,
+						Sender:      sender,
+						Sent:        time.Now().UTC(),
+						Message:     msg,
+						UnreadUsers: inviteUsers,
+					},
+				})
+
+				messageCount, err := repo.GetMessageCountByRoomIDAndSent("invalid room id", sent)
+				Expect(err).To(MatchError("get message count error. invalid UUID \"invalid room id\""))
+				Expect(messageCount).To(BeZero())
+			})
+		})
+	})
 })
 
-func createMessageForTest(repo repository.Repositorier, param *repository.CreateMessageParam, repeat int) {
-	if repeat < 1 {
+func createMessageForTest(repo repository.Repositorier, params []*repository.CreateMessageParam) {
+	if len(params) < 1 {
 		panic("create message for test minimum repeat is 1")
 	}
 
-	for range repeat {
-		err := repo.CreateMessage(param)
+	for _, p := range params {
+		err := repo.CreateMessage(p)
 		Expect(err).ShouldNot(HaveOccurred())
-		err = repo.UpdateRecentMessage(param.RoomID, param.Message)
+		err = repo.UpdateRecentMessage(p.RoomID, p.Message)
+		Expect(err).ShouldNot(HaveOccurred())
+		err = repo.UpdateMessageReadTime(p.RoomID, p.Sender, p.Sent)
 		Expect(err).ShouldNot(HaveOccurred())
 	}
 }
