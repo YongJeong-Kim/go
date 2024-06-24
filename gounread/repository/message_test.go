@@ -179,7 +179,8 @@ var _ = Describe("Message", func() {
 					return times[i].After(times[j])
 				})
 				end := time.Now().UTC()
-				messages := repo.GetMessagesByRoomIDAndTime(roomID, start, end)
+				messages, err := repo.GetMessagesByRoomIDAndTime(roomID, start, end)
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(messages).To(HaveLen(sendCount))
 
 				for i, m := range messages {
@@ -206,8 +207,9 @@ var _ = Describe("Message", func() {
 					},
 				})
 				end := time.Now().UTC()
-				messages := repo.GetMessagesByRoomIDAndTime(roomID, start, end)
-				Expect(messages).To(BeZero())
+				messages, err := repo.GetMessagesByRoomIDAndTime(roomID, start, end)
+				Expect(err).ShouldNot(HaveOccurred())
+				Expect(messages).To(BeNil())
 			})
 
 			It("invalid room id", func() {
@@ -223,9 +225,9 @@ var _ = Describe("Message", func() {
 					},
 				})
 				end := time.Now().UTC()
-				messages := repo.GetMessagesByRoomIDAndTime("invalid room id", start, end)
+				messages, err := repo.GetMessagesByRoomIDAndTime("invalid room id", start, end)
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(messages).To(BeNil())
-				Expect(messages).To(BeZero())
 			})
 		})
 	})
@@ -437,7 +439,9 @@ var _ = Describe("Message", func() {
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				readTimes := repo.GetAllRoomsReadMessageTime(sender)
+				readTimes, err := repo.GetAllRoomsReadMessageTime(sender)
+				Expect(err).ShouldNot(HaveOccurred())
+
 				for _, r := range readTimes {
 					Expect(r).To(PointTo(MatchAllFields(Fields{
 						"RoomID":   Equal(roomID),
@@ -462,7 +466,8 @@ var _ = Describe("Message", func() {
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				readTimes := repo.GetAllRoomsReadMessageTime(uuid.NewString())
+				readTimes, err := repo.GetAllRoomsReadMessageTime(uuid.NewString())
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(readTimes).To(BeNil())
 				Expect(readTimes).To(HaveLen(0))
 			})
@@ -483,7 +488,8 @@ var _ = Describe("Message", func() {
 				err := repo.UpdateMessageReadTime(roomID, sender, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				readTimes := repo.GetAllRoomsReadMessageTime("invalid user id")
+				readTimes, err := repo.GetAllRoomsReadMessageTime("invalid user id")
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(readTimes).To(BeNil())
 				Expect(readTimes).To(HaveLen(0))
 			})
@@ -510,16 +516,20 @@ var _ = Describe("Message", func() {
 				Expect(err).ShouldNot(HaveOccurred())
 
 				updateReadTime := time.Now().UTC()
+				messages, err := repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime)
+				Expect(err).ShouldNot(HaveOccurred())
 				err = repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
 					UserID:   u1,
-					Messages: repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime),
+					Messages: messages,
 				})
 				Expect(err).ShouldNot(HaveOccurred())
 
 				err = repo.UpdateMessageReadTime(roomID, u1, updateReadTime)
 				Expect(err).ShouldNot(HaveOccurred())
 
-				messages := repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime)
+				messages, err = repo.GetMessagesByRoomIDAndTime(roomID, readTime, updateReadTime)
+				Expect(err).ShouldNot(HaveOccurred())
+
 				for _, m := range messages {
 					Expect(m).To(PointTo(MatchAllFields(Fields{
 						"RoomID": Equal(roomID),
@@ -621,7 +631,9 @@ var _ = Describe("Message", func() {
 			}
 			createMessageForTest(repo, params)
 
-			messages := repo.GetRecentMessages(roomID, len(params))
+			messages, err := repo.GetRecentMessages(roomID, len(params))
+			Expect(err).ShouldNot(HaveOccurred())
+
 			for _, m := range messages {
 				Expect(m).To(PointTo(MatchAllFields(Fields{
 					"RoomID": Equal(roomID),
@@ -653,7 +665,8 @@ var _ = Describe("Message", func() {
 				}
 				createMessageForTest(repo, params)
 
-				messages := repo.GetRecentMessages("invalid room id", len(params))
+				messages, err := repo.GetRecentMessages("invalid room id", len(params))
+				Expect(err).ShouldNot(HaveOccurred())
 				Expect(messages).To(BeNil())
 				Expect(messages).To(BeEmpty())
 			})

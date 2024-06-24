@@ -14,7 +14,7 @@ func (s *Service) UpdateRecentMessage(roomID, recentMessage string) error {
 	return s.Repo.UpdateRecentMessage(roomID, recentMessage)
 }
 
-func (s *Service) GetRecentMessages(roomID string, limit int) []*repository.GetRecentMessagesResult {
+func (s *Service) GetRecentMessages(roomID string, limit int) ([]*repository.GetRecentMessagesResult, error) {
 	return s.Repo.GetRecentMessages(roomID, limit)
 }
 
@@ -25,7 +25,10 @@ func (s *Service) ReadMessage(roomID, userID string) (time.Time, time.Time, erro
 	}
 
 	now := time.Now().UTC()
-	messages := s.Repo.GetMessagesByRoomIDAndTime(roomID, t, now)
+	messages, err := s.Repo.GetMessagesByRoomIDAndTime(roomID, t, now)
+	if err != nil {
+		return time.Time{}, time.Time{}, fmt.Errorf("get messages by room id and time error. %v", err)
+	}
 	if messages != nil {
 		err = s.Repo.UpdateUnreadMessageBatch(&repository.UpdateUnreadMessageBatchParam{
 			UserID:   userID,
@@ -44,7 +47,7 @@ func (s *Service) ReadMessage(roomID, userID string) (time.Time, time.Time, erro
 	return t, now, nil
 }
 
-func (s *Service) GetAllRoomsReadMessageTime(userID string) []*repository.GetAllRoomsReadMessageTimeResult {
+func (s *Service) GetAllRoomsReadMessageTime(userID string) ([]*repository.GetAllRoomsReadMessageTimeResult, error) {
 	return s.Repo.GetAllRoomsReadMessageTime(userID)
 }
 
@@ -74,11 +77,7 @@ func (s *Service) GetRecentMessageByRoomID(roomID string) (*repository.GetRecent
 	return s.Repo.GetRecentMessageByRoomID(roomID)
 }
 
-/*func (s *Service) GetMessageReadTime(roomID, userID string) (time.Time, error) {
-	return s.Repo.GetMessageReadTime(roomID, userID)
-}*/
-
-func (s *Service) GetUnreadMessages(roomID string, start time.Time, end time.Time) []*repository.GetMessagesByRoomIDAndTimeResult {
+func (s *Service) GetUnreadMessages(roomID string, start time.Time, end time.Time) ([]*repository.GetMessagesByRoomIDAndTimeResult, error) {
 	return s.Repo.GetMessagesByRoomIDAndTime(roomID, start, end)
 }
 

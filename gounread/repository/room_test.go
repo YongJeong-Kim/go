@@ -62,7 +62,7 @@ var _ = Describe("Room", func() {
 					u = "invalid user id"
 					rooms, err := repo.GetRoomsByUserID(u)
 					Expect(rooms).To(BeNil())
-					Expect(err).To(Equal(fmt.Errorf("user not found. %s", u)))
+					Expect(err).To(MatchError("GetRoomsByUserID next failed. invalid UUID \"invalid user id\""))
 				}
 			})
 		})

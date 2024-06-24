@@ -2,7 +2,6 @@ package repository
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -14,22 +13,27 @@ type GetRoomsByUserIDResult struct {
 
 func (r *Repository) GetRoomsByUserID(userID string) ([]*GetRoomsByUserIDResult, error) {
 	q := `SELECT room_id, recent_message, time FROM room WHERE users CONTAINS ?`
-	rooms := r.Session.Query(q, []string{"room_id", "recent_message", "time"}).Bind(userID).Iter()
-	defer func() {
-		err := rooms.Close()
-		if err != nil {
-			log.Println("GetRoomsByUserID close failed. ", err)
-		}
-	}()
+	scanner := r.Session.Query(q, nil).Bind(userID).Iter().Scanner()
 
 	var result []*GetRoomsByUserIDResult
-	for {
-		var r GetRoomsByUserIDResult
-		if !rooms.StructScan(&r) {
-			break
+	for scanner.Next() {
+		var roomID, recentMessage string
+		var t time.Time
+
+		err := scanner.Scan(&roomID, &recentMessage, &t)
+		if err != nil {
+			return nil, fmt.Errorf("GetRoomsByUserID scan failed. %v", err)
 		}
-		result = append(result, &r)
+		result = append(result, &GetRoomsByUserIDResult{
+			RoomID:        roomID,
+			RecentMessage: recentMessage,
+			Time:          t,
+		})
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("GetRoomsByUserID next failed. %v", err)
+	}
+
 	if result == nil {
 		return nil, fmt.Errorf("user not found. %s", userID)
 	}

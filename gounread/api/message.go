@@ -145,9 +145,22 @@ func (s *Server) ReadMessage(c *gin.Context) {
 		return
 	}
 
-	messages := s.Service.GetUnreadMessages(reqURI.RoomID, start, end)
+	messages, err := s.Service.GetUnreadMessages(reqURI.RoomID, start, end)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 	if len(messages) == 0 {
-		recentMessages := s.Service.GetRecentMessages(reqURI.RoomID, 10)
+		recentMessages, err := s.Service.GetRecentMessages(reqURI.RoomID, 10)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
 		c.JSON(http.StatusOK, recentMessages)
 		return
 	}
@@ -181,14 +194,6 @@ func (s *Server) GetRoomStatusInLobby(c *gin.Context) {
 		})
 		return
 	}
-
-	/*	t, err := s.Service.GetMessageReadTime(reqURI.RoomID, userID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}*/
 
 	count, err := s.Service.GetUnreadMessageCount(reqURI.RoomID, userID)
 	if err != nil {

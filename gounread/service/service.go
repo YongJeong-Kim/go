@@ -7,13 +7,12 @@ import (
 
 type Message interface {
 	CreateMessage(param *repository.CreateMessageParam) error
-	GetAllRoomsReadMessageTime(userID string) []*repository.GetAllRoomsReadMessageTimeResult
-	//GetMessageReadTime(roomID, userID string) (time.Time, error)
+	GetAllRoomsReadMessageTime(userID string) ([]*repository.GetAllRoomsReadMessageTimeResult, error)
 	GetRecentMessageByRoomID(roomID string) (*repository.GetRecentMessageByRoomIDResult, error)
-	GetRecentMessages(roomID string, limit int) []*repository.GetRecentMessagesResult
+	GetRecentMessages(roomID string, limit int) ([]*repository.GetRecentMessagesResult, error)
 	GetRoomsUnreadMessageCount(times []*repository.GetAllRoomsReadMessageTimeResult) ([]*GetRoomsUnreadMessageCountResult, error)
 	GetUnreadMessageCount(roomID, userID string) (int, error)
-	GetUnreadMessages(roomID string, start time.Time, end time.Time) []*repository.GetMessagesByRoomIDAndTimeResult
+	GetUnreadMessages(roomID string, start time.Time, end time.Time) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
 	ReadMessage(roomID, userID string) (time.Time, time.Time, error)
 	UpdateMessageReadTime(roomID, userID string, t time.Time) error
 	UpdateRecentMessage(roomID, recentMessage string) error

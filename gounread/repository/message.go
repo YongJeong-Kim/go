@@ -50,19 +50,34 @@ type GetMessagesByRoomIDAndTimeResult struct {
 	Unread []string  `db:"unread" json:"unread"`
 }
 
-func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, start time.Time, end time.Time) []*GetMessagesByRoomIDAndTimeResult {
+func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, start time.Time, end time.Time) ([]*GetMessagesByRoomIDAndTimeResult, error) {
 	q := `SELECT room_id, sent, msg, sender, unread FROM message WHERE room_id = ? AND sent >= ? AND sent <= ?`
-	iter := r.Session.Query(q, nil).Bind(roomID, start, end).Iter()
+	scanner := r.Session.Query(q, nil).Bind(roomID, start, end).Iter().Scanner()
 
 	var result []*GetMessagesByRoomIDAndTimeResult
-	for {
-		var rr GetMessagesByRoomIDAndTimeResult
-		if !iter.StructScan(&rr) {
-			break
+	for scanner.Next() {
+		var (
+			rID    string
+			sent   time.Time
+			msg    string
+			sender string
+			unread []string
+		)
+
+		err := scanner.Scan(&rID, &sent, &msg, &sender, &unread)
+		if err != nil {
+			return nil, fmt.Errorf("get messages by room id and time scan failed. %v", err)
 		}
-		result = append(result, &rr)
+
+		result = append(result, &GetMessagesByRoomIDAndTimeResult{
+			RoomID: roomID,
+			Msg:    msg,
+			Sent:   sent,
+			Sender: sender,
+			Unread: unread,
+		})
 	}
-	return result
+	return result, nil
 }
 
 func (r *Repository) GetMessageReadTime(roomID, userID string) (time.Time, error) {
@@ -95,20 +110,27 @@ type GetAllRoomsReadMessageTimeResult struct {
 	ReadTime time.Time `db:"read_time" json:"read_time"`
 }
 
-func (r *Repository) GetAllRoomsReadMessageTime(userID string) []*GetAllRoomsReadMessageTimeResult {
+func (r *Repository) GetAllRoomsReadMessageTime(userID string) ([]*GetAllRoomsReadMessageTimeResult, error) {
 	q := `SELECT room_id, read_time FROM message_read_by_user WHERE user_id = ?`
-	counts := r.Session.Query(q, []string{}).Bind(userID).Iter()
+	scanner := r.Session.Query(q, []string{}).Bind(userID).Iter().Scanner()
 
 	var result []*GetAllRoomsReadMessageTimeResult
-	for {
-		var rr GetAllRoomsReadMessageTimeResult
-		if !counts.StructScan(&rr) {
-			break
+	for scanner.Next() {
+		var roomID string
+		var readTime time.Time
+
+		err := scanner.Scan(&roomID, &readTime)
+		if err != nil {
+			return nil, fmt.Errorf("get all rooms read message time error. %v", err)
 		}
-		result = append(result, &rr)
+
+		result = append(result, &GetAllRoomsReadMessageTimeResult{
+			RoomID:   roomID,
+			ReadTime: readTime,
+		})
 	}
 
-	return result
+	return result, nil
 }
 
 type UpdateUnreadMessageBatchParam struct {
@@ -151,20 +173,33 @@ type GetRecentMessagesResult struct {
 	Sender string    `db:"sender" json:"sender"`
 }
 
-func (r *Repository) GetRecentMessages(roomID string, limit int) []*GetRecentMessagesResult {
+func (r *Repository) GetRecentMessages(roomID string, limit int) ([]*GetRecentMessagesResult, error) {
 	q := `SELECT room_id, sent, msg, sender FROM message WHERE room_id = ? LIMIT ?`
-	messages := r.Session.Query(q, []string{}).Bind(roomID, limit).Iter()
+	scanner := r.Session.Query(q, []string{}).Bind(roomID, limit).Iter().Scanner()
 
 	var result []*GetRecentMessagesResult
-	for {
-		var m GetRecentMessagesResult
-		if !messages.StructScan(&m) {
-			break
+	for scanner.Next() {
+		var (
+			rID    string
+			sent   time.Time
+			msg    string
+			sender string
+		)
+
+		err := scanner.Scan(&rID, &sent, &msg, &sender)
+		if err != nil {
+			return nil, fmt.Errorf("get recent messages error. %v", err)
 		}
-		result = append(result, &m)
+
+		result = append(result, &GetRecentMessagesResult{
+			RoomID: rID,
+			Sender: sender,
+			Sent:   sent,
+			Msg:    msg,
+		})
 	}
 
-	return result
+	return result, nil
 }
 
 func (r *Repository) GetMessageCountByRoomIDAndSent(roomID string, readTime time.Time) (int, error) {

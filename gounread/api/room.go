@@ -68,7 +68,12 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 		return rooms[i].Time.After(rooms[j].Time)
 	})
 
-	times := s.Service.GetAllRoomsReadMessageTime(req.UserID)
+	times, err := s.Service.GetAllRoomsReadMessageTime(req.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	counts, err := s.Service.GetRoomsUnreadMessageCount(times)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
