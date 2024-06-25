@@ -2,26 +2,18 @@ package service
 
 import (
 	"gounread/repository"
-	"time"
 )
 
 type Message interface {
-	CreateMessage(param *repository.CreateMessageParam) error
-	GetAllRoomsReadMessageTime(userID string) ([]*repository.GetAllRoomsReadMessageTimeResult, error)
-	GetRecentMessageByRoomID(roomID string) (*repository.GetRecentMessageByRoomIDResult, error)
+	SendMessage(param *SendMessageParam) (*Payload, error)
 	GetRecentMessages(roomID string, limit int) ([]*repository.GetRecentMessagesResult, error)
-	GetRoomsUnreadMessageCount(times []*repository.GetAllRoomsReadMessageTimeResult) ([]*GetRoomsUnreadMessageCountResult, error)
-	GetUnreadMessageCount(roomID, userID string) (int, error)
-	GetUnreadMessages(roomID string, start time.Time, end time.Time) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
-	ReadMessage(roomID, userID string) (time.Time, time.Time, error)
-	UpdateMessageReadTime(roomID, userID string, t time.Time) error
-	UpdateRecentMessage(roomID, recentMessage string) error
+	ReadMessage(roomID, userID string) ([]*repository.GetMessagesByRoomIDAndTimeResult, error)
 }
 
 type Room interface {
 	CreateRoom(users []string) error
 	GetRoomsByUserID(userID string) ([]*repository.GetRoomsByUserIDResult, error)
-	GetUsersByRoomID(roomID string) ([]string, error)
+	ListRoomsByUserID(userID string) ([]*ListRoomsByUserIDResult, error)
 }
 
 type Servicer interface {

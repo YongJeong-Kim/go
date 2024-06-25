@@ -32,16 +32,6 @@ func (r *Repository) UpdateRecentMessage(roomID, recentMessage string) error {
 	return nil
 }
 
-func (r *Repository) GetUnreadMessageCount(roomID string, t time.Time) (int, error) {
-	var cnt int
-	q := `SELECT COUNT(room_id) AS cnt FROM message WHERE room_id = ? AND sent >= ? AND sent <= toTimestamp(now())`
-	err := r.Session.Query(q, nil).Bind(roomID, t).Get(&cnt)
-	if err != nil {
-		return 0, fmt.Errorf("get message status unread count failed. %v", err)
-	}
-	return cnt, nil
-}
-
 type GetMessagesByRoomIDAndTimeResult struct {
 	RoomID string    `db:"room_id" json:"room_id"`
 	Sent   time.Time `db:"sent" json:"sent"`
@@ -77,6 +67,10 @@ func (r *Repository) GetMessagesByRoomIDAndTime(roomID string, start time.Time, 
 			Unread: unread,
 		})
 	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("message not found. %s: between %s ~ %s", roomID, start, end)
+	}
+
 	return result, nil
 }
 
@@ -95,26 +89,16 @@ type GetRecentMessageByRoomIDResult struct {
 	RecentMessage string `db:"recent_message" json:"recent_message"`
 }
 
-func (r *Repository) GetRecentMessageByRoomID(roomID string) (*GetRecentMessageByRoomIDResult, error) {
-	var rr GetRecentMessageByRoomIDResult
-	q := `SELECT room_id, recent_message FROM room WHERE room_id = ? LIMIT 1`
-	err := r.Session.Query(q, nil).Bind(roomID).Get(&rr)
-	if err != nil {
-		return nil, fmt.Errorf("get room recent message failed. %v", err)
-	}
-	return &rr, nil
-}
-
-type GetAllRoomsReadMessageTimeResult struct {
+type GetAllRoomsMessageReadTimeResult struct {
 	RoomID   string    `db:"room_id" json:"room_id"`
 	ReadTime time.Time `db:"read_time" json:"read_time"`
 }
 
-func (r *Repository) GetAllRoomsReadMessageTime(userID string) ([]*GetAllRoomsReadMessageTimeResult, error) {
+func (r *Repository) GetAllRoomsMessageReadTime(userID string) ([]*GetAllRoomsMessageReadTimeResult, error) {
 	q := `SELECT room_id, read_time FROM message_read_by_user WHERE user_id = ?`
 	scanner := r.Session.Query(q, []string{}).Bind(userID).Iter().Scanner()
 
-	var result []*GetAllRoomsReadMessageTimeResult
+	var result []*GetAllRoomsMessageReadTimeResult
 	for scanner.Next() {
 		var roomID string
 		var readTime time.Time
@@ -124,10 +108,13 @@ func (r *Repository) GetAllRoomsReadMessageTime(userID string) ([]*GetAllRoomsRe
 			return nil, fmt.Errorf("get all rooms read message time error. %v", err)
 		}
 
-		result = append(result, &GetAllRoomsReadMessageTimeResult{
+		result = append(result, &GetAllRoomsMessageReadTimeResult{
 			RoomID:   roomID,
 			ReadTime: readTime,
 		})
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("get all rooms read message time next error. %v", err)
 	}
 
 	return result, nil
@@ -188,7 +175,7 @@ func (r *Repository) GetRecentMessages(roomID string, limit int) ([]*GetRecentMe
 
 		err := scanner.Scan(&rID, &sent, &msg, &sender)
 		if err != nil {
-			return nil, fmt.Errorf("get recent messages error. %v", err)
+			return nil, fmt.Errorf("get recent messages scan error. %v", err)
 		}
 
 		result = append(result, &GetRecentMessagesResult{
@@ -197,6 +184,13 @@ func (r *Repository) GetRecentMessages(roomID string, limit int) ([]*GetRecentMe
 			Sent:   sent,
 			Msg:    msg,
 		})
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("get recent messages next error. %v", err)
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("room not found. %s", roomID)
 	}
 
 	return result, nil

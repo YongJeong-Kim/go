@@ -44,19 +44,13 @@ func NewServer(svr service.Servicer) *Server {
 
 func (s *Server) SetupRouter() {
 	r := gin.New()
-	r.GET("/users/:user_id/rooms", s.GetRoomsByUserID)
+	r.GET("/users/:user_id/rooms", s.ListRoomsByUserID)
 	r.POST("/connect", s.ConnectClient)
 
-	r.GET("/test", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"msg": "ok",
-		})
-	})
 	roomRouter := r.Group("/rooms")
 	{
 		roomRouter.POST("/:room_id/send", s.SendMessage)
 		roomRouter.PUT("/:room_id/read", s.ReadMessage)
-		roomRouter.GET("/:room_id", s.GetRoomStatusInLobby)
 		roomRouter.POST("", s.CreateRoom)
 	}
 	s.Router = r

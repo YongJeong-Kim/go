@@ -19,6 +19,7 @@ var _ = Describe("Room", func() {
 			users = append(users, uuid.NewString())
 		}
 		Expect(users).ShouldNot(BeNil())
+		Expect(users).ShouldNot(BeEmpty())
 	})
 	AfterEach(func() {
 		users = nil
@@ -35,35 +36,52 @@ var _ = Describe("Room", func() {
 				err := repo.CreateRoom(uuid.NewString(), users)
 				Expect(err).To(BeEquivalentTo(fmt.Errorf("create room error. invalid UUID \"invalid user id\"")))
 			})
+
+			It("invalid room id", func() {
+				err := repo.CreateRoom("invalid room id", users)
+				Expect(err).To(MatchError("create room error. invalid UUID \"invalid room id\""))
+			})
 		})
 	})
 
 	When("get rooms by user id", func() {
-		Context("get rooms by 5 user ids", func() {
+		It("ok", func() {
+			err := repo.CreateRoom(uuid.NewString(), users)
+			Expect(err).Should(BeNil())
+
+			for _, u := range users {
+				rooms, err := repo.GetRoomsByUserID(u)
+				Expect(err).ShouldNot(HaveOccurred())
+				for _, r := range rooms {
+					Expect(r.RoomID).ShouldNot(BeNil())
+					Expect(r.Time).ShouldNot(BeNil())
+					Expect(r.RecentMessage).Should(BeEmpty())
+				}
+			}
+		})
+
+		Context("fail", func() {
 			BeforeEach(func() {
 				err := repo.CreateRoom(uuid.NewString(), users)
 				Expect(err).Should(BeNil())
-			})
-
-			It("ok", func() {
-				for _, u := range users {
-					rooms, err := repo.GetRoomsByUserID(u)
-					Expect(err).Should(BeNil())
-					for _, r := range rooms {
-						Expect(r.RoomID).ShouldNot(BeNil())
-						Expect(r.Time).ShouldNot(BeNil())
-						Expect(r.RecentMessage).Should(BeEmpty())
-					}
-				}
 			})
 
 			It("invalid user id", func() {
 				for _, u := range users {
 					u = "invalid user id"
 					rooms, err := repo.GetRoomsByUserID(u)
-					Expect(rooms).To(BeNil())
 					Expect(err).To(MatchError("GetRoomsByUserID next failed. invalid UUID \"invalid user id\""))
+					Expect(rooms).To(BeNil())
+					Expect(rooms).To(BeEmpty())
 				}
+			})
+
+			It("user not found", func() {
+				userNotFound := uuid.NewString()
+				rooms, err := repo.GetRoomsByUserID(userNotFound)
+				Expect(err).To(MatchError(fmt.Sprintf("user not found. %s", userNotFound)))
+				Expect(rooms).To(BeNil())
+				Expect(rooms).To(BeEmpty())
 			})
 		})
 	})

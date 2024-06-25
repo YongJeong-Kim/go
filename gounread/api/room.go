@@ -2,10 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gounread/util"
 	"net/http"
-	"sort"
-	"strconv"
 	"time"
 )
 
@@ -38,14 +37,14 @@ func (s *Server) CreateRoom(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-type GetRoomsByUserIDResponse struct {
+type ListRoomsByUserIDResponse struct {
 	RoomID        string    `json:"room_id"`
 	RecentMessage string    `json:"recent_message"`
 	Time          time.Time `json:"time"`
 	UnreadCount   string    `json:"unread_count"`
 }
 
-func (s *Server) GetRoomsByUserID(c *gin.Context) {
+func (s *Server) ListRoomsByUserID(c *gin.Context) {
 	var req struct {
 		UserID string `uri:"user_id"`
 	}
@@ -56,25 +55,13 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 		return
 	}
 
-	rooms, err := s.Service.GetRoomsByUserID(req.UserID)
+	err := uuid.Validate(req.UserID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{
-			"error": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	sort.Slice(rooms, func(i, j int) bool {
-		return rooms[i].Time.After(rooms[j].Time)
-	})
-
-	times, err := s.Service.GetAllRoomsReadMessageTime(req.UserID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	counts, err := s.Service.GetRoomsUnreadMessageCount(times)
+	rooms, err := s.Service.ListRoomsByUserID(req.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -82,19 +69,5 @@ func (s *Server) GetRoomsByUserID(c *gin.Context) {
 		return
 	}
 
-	var resp []*GetRoomsByUserIDResponse
-	for _, r := range rooms {
-		for _, c := range counts {
-			if r.RoomID == c.RoomID {
-				resp = append(resp, &GetRoomsByUserIDResponse{
-					RoomID:        r.RoomID,
-					Time:          r.Time,
-					RecentMessage: r.RecentMessage,
-					UnreadCount:   strconv.Itoa(c.Count),
-				})
-			}
-		}
-	}
-
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, rooms)
 }
