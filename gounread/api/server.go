@@ -3,8 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/gocql/gocql"
-	"github.com/nats-io/nats.go"
 	"github.com/scylladb/gocqlx/v2"
+	"gounread/embedded"
 	"gounread/service"
 	"log"
 	"net/http"
@@ -31,14 +31,16 @@ func (s *Server) ConnectClient(c *gin.Context) {
 }
 
 type Server struct {
-	Nats    *nats.Conn
+	//Nats    *nats.Conn
+	Notify  embedded.Notifier
 	Service service.Servicer
 	Router  *gin.Engine
 }
 
-func NewServer(svr service.Servicer) *Server {
+func NewServer(svr service.Servicer, n embedded.Notifier) *Server {
 	return &Server{
 		Service: svr,
+		Notify:  n,
 	}
 }
 

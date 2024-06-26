@@ -54,27 +54,10 @@ func (s *Server) SendMessage(c *gin.Context) {
 	}
 
 	b, _ := json.Marshal(payload)
-
-	err = s.Nats.Publish("room."+payload.RoomID, b)
+	err = s.Notify.Publish("room."+payload.RoomID, b)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("%s%v", "room publish error. ", err),
-		})
-		return
-	}
-
-	err = s.Nats.Publish("lobby."+payload.RoomID, b)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("%s%v", "lobby publish error. ", err),
-		})
-		return
-	}
-
-	err = s.Nats.Publish("focus.lobby."+payload.RoomID, b)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("%s%v", "focus lobby publish error. ", err),
 		})
 		return
 	}

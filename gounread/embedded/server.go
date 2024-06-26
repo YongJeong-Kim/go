@@ -2,6 +2,7 @@ package embedded
 
 import (
 	"github.com/nats-io/nats-server/v2/server"
+	"github.com/nats-io/nats.go"
 	"log"
 	"net/url"
 )
@@ -81,4 +82,27 @@ func NewServer(opts *server.Options) *server.Server {
 	}
 
 	return ns
+}
+
+func (n *Notify) Publish(subject string, data []byte) error {
+	return n.Nats.Publish(subject, data)
+}
+
+func (n *Notify) Drain() error {
+	return n.Drain()
+}
+
+type Notifier interface {
+	Publish(subject string, data []byte) error
+	Drain() error
+}
+
+type Notify struct {
+	Nats *nats.Conn
+}
+
+func NewNotify(conn *nats.Conn) *Notify {
+	return &Notify{
+		Nats: conn,
+	}
 }

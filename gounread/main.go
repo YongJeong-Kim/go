@@ -21,7 +21,7 @@ var interruptSignal = []os.Signal{syscall.SIGTERM, syscall.SIGINT, os.Interrupt}
 func main() {
 	var repo repository.Repositorier = repository.NewRepository(api.NewSession())
 	var svc service.Servicer = service.NewService(repo)
-	server := api.NewServer(svc)
+	server := api.NewServer(svc, nil)
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignal...)
 	defer stop()
@@ -50,7 +50,7 @@ func main() {
 		log.Println("start s3")
 		s3.Start()
 
-		ns, err := nats.Connect(
+		nc, err := nats.Connect(
 			strings.Join(embedded.Servers, ","),
 			nats.ConnectHandler(func(conn *nats.Conn) {
 				log.Println("client connection")
@@ -60,7 +60,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		server.Nats = ns
+		//server.Nats = nc
+		var n embedded.Notifier = embedded.NewNotify(nc)
+		server.Notify = n
 
 		return nil
 	})
@@ -80,7 +82,7 @@ func main() {
 		}
 
 		log.Println("drain connection")
-		server.Nats.Drain()
+		server.Notify.Drain()
 		log.Println("s1 wait for shutdown")
 		s1.WaitForShutdown()
 		log.Println("s2 wait for shutdown")

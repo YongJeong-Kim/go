@@ -5,6 +5,9 @@ testall:
 mocksvc:
 	mockgen -source service/service.go -destination service/svcmock/service_mock.go -package svcmock Servicer
 
+mocknotify:
+	mockgen -source embedded/server.go -destination embedded/notifymock/server_mock.go -package notifymock Notifier
+
 join1u1:
 	go run client/room/recv/receive.go --user 05f84f46-d4ad-42db-af4f-da63cffcb721 --room 01f84cfa-e487-494c-82e5-e75f95ef0573
 
@@ -13,3 +16,6 @@ join1u2:
 
 join1u3:
 	go run client/room/recv/receive.go --user 01a5482c-2053-4728-96b0-8c950ebcf35a --room 01f84cfa-e487-494c-82e5-e75f95ef0573
+
+send1u1:
+	go run client/room/send/send.go --user 05f84f46-d4ad-42db-af4f-da63cffcb721 --room 01f84cfa-e487-494c-82e5-e75f95ef0573

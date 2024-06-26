@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	"go.uber.org/mock/gomock"
 	"gounread/api"
+	"gounread/embedded/notifymock"
 	"gounread/service"
 	"gounread/service/svcmock"
 	"io"
@@ -23,6 +24,7 @@ var _ = Describe("Room", func() {
 	var (
 		svr      *api.Server
 		m        *svcmock.MockServicer
+		nm       *notifymock.MockNotifier
 		req      *http.Request
 		recorder *httptest.ResponseRecorder
 	)
@@ -32,8 +34,9 @@ var _ = Describe("Room", func() {
 		defer ctrl.Finish()
 
 		recorder = httptest.NewRecorder()
+		nm = notifymock.NewMockNotifier(ctrl)
 		m = svcmock.NewMockServicer(ctrl)
-		svr = api.NewServer(m)
+		svr = api.NewServer(m, nm)
 		svr.SetupRouter()
 	})
 
