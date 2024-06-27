@@ -19,6 +19,7 @@ import (
 var interruptSignal = []os.Signal{syscall.SIGTERM, syscall.SIGINT, os.Interrupt}
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	var repo repository.Repositorier = repository.NewRepository(api.NewSession())
 	var svc service.Servicer = service.NewService(repo)
 	server := api.NewServer(svc, nil)
@@ -39,10 +40,6 @@ func main() {
 	s3 := embedded.NewServer(embedded.Opts3)
 
 	group.Go(func() error {
-		/*	server.SetupSubscription(ctx, []string{
-			"cd8bb8a2-f947-4777-92b9-fbdb839c67ac",
-			"01f84cfa-e487-494c-82e5-e75f95ef0573",
-		})*/
 		log.Println("start s1")
 		s1.Start()
 		log.Println("start s2")

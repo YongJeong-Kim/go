@@ -4,45 +4,64 @@ services:
   scylla:
     image: scylladb/scylla:latest
     container_name: scylla
-    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend epoll --seeds=scylla
     ports:
       - "19042:9042"
     restart: always
-    healthcheck:
-      test: cqlsh -e "SHOW VERSION" || exit 1
-      interval: 15s
-      retries: 10
-      start_period: 30s
-      timeout: 30s
+#    environment:
+#      - "CASSANDRA_CLUSTER_NAME=testCluster"
+#      - "CASSANDRA_DC=mydatacenter111"
+#    healthcheck:
+#      test: cqlsh -e "SHOW VERSION" || exit 1
+#      interval: 15s
+#      retries: 10
+#      start_period: 30s
+#      timeout: 30s
+    networks:
+      web:
 
   scylla2:
     image: scylladb/scylla:latest
     container_name: scylla2
-    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll --seeds=scylla
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend epoll --seeds=scylla
     ports:
       - "29042:9042"
     restart: always
-    healthcheck:
-      test: cqlsh -e "SHOW VERSION" || exit 1
-      interval: 15s
-      retries: 10
-      start_period: 30s
-      timeout: 30s
+#    healthcheck:
+#      test: cqlsh -e "SHOW VERSION" || exit 1
+#      interval: 15s
+#      retries: 10
+#      start_period: 30s
+#      timeout: 30s
+    networks:
+      web:
     depends_on:
-      - scylla
+      scylla:
+        condition: service_started
+#      scylla:
+#        condition: service_completed_successfully
 
   scylla3:
     image: scylladb/scylla:latest
     container_name: scylla3
-    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend=epoll --seeds=scylla
+    command: --smp 1 --authenticator PasswordAuthenticator --reactor-backend epoll --seeds=scylla
     ports:
       - "39042:9042"
     restart: always
-    healthcheck:
-      test: cqlsh -e "SHOW VERSION" || exit 1
-      interval: 15s
-      retries: 10
-      start_period: 30s
-      timeout: 30s
+#    healthcheck:
+#      test: cqlsh -e "SHOW VERSION" || exit 1
+#      interval: 15s
+#      retries: 10
+#      start_period: 30s
+#      timeout: 30s
+    networks:
+      web:
     depends_on:
-      - scylla
+      scylla:
+        condition: service_started
+#      scylla:
+#        condition: service_completed_successfully
+
+networks:
+  web:
+    driver: bridge

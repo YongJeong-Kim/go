@@ -44,8 +44,19 @@ node status
 ```bash 
 $ docker compose exec -it scylla nodetool status
 ```
-![image.png](https://github.zendesk.com/attachments/token/OWndFubgMoSeqioHyt36HGFm2/?name=image.png)
 
+```bash 
+Datacenter: datacenter1
+=======================
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address     Load       Tokens       Owns    Host ID                               Rack
+UN  172.26.0.2  418.35 KB  256          ?       1ca8e6af-9233-405f-b4a2-75c6b603e9ca  rack1
+UN  172.26.0.3  400.8 KB   256          ?       a8098db1-f596-4f9a-9701-6a39daff00f6  rack1
+UN  172.26.0.4  412.41 KB  256          ?       c97a498f-f354-48c9-a5dd-fdf9855402c2  rack1
+
+Note: Non-system keyspaces don't have the same replication settings, effective ownership information is meaningless
+```
 thread safe
 `The Java List Index is not thread safe. The set or map collection types are safer for updates.`
 see https://docs.datastax.com/en/cql-oss/3.3/cql/cql_reference/cqlUpdate.html#Updatingalist

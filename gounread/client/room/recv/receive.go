@@ -22,6 +22,7 @@ const (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	userID := flag.String("user", user1, "input user id")
 	roomID := flag.String("room", room1, "input room id")
 	flag.Parse()
