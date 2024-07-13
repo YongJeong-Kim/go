@@ -4,14 +4,15 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"github.com/IBM/sarama"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"sync"
 	"syscall"
-
-	"github.com/IBM/sarama"
 )
 
 // Sarama configuration options
@@ -29,7 +30,7 @@ func init() {
 	flag.StringVar(&brokers, "brokers", "localhost:19092", "Kafka bootstrap brokers to connect to, as a comma separated list")
 	flag.StringVar(&group, "group", "group11", "Kafka consumer group definition")
 	flag.StringVar(&version, "version", sarama.DefaultVersion.String(), "Kafka cluster version")
-	flag.StringVar(&topics, "topics", "important", "Kafka topics to be consumed, as a comma separated list")
+	flag.StringVar(&topics, "topics", "bbb", "Kafka topics to be consumed, as a comma separated list")
 	flag.StringVar(&assignor, "assignor", "range", "Consumer group partition assignment strategy (range, roundrobin, sticky)")
 	flag.BoolVar(&oldest, "oldest", true, "Kafka consumer consume initial offset from oldest")
 	flag.BoolVar(&verbose, "verbose", false, "Sarama logging")
@@ -86,8 +87,20 @@ func main() {
 	/**
 	 * Setup a new Sarama consumer group
 	 */
+
+	db, err := sqlx.Connect("mysql", "root:1234@(localhost:33306)/aaa")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
 	consumer := Consumer{
 		ready: make(chan bool),
+		db:    db,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -162,6 +175,7 @@ func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
 // Consumer represents a Sarama consumer group consumer
 type Consumer struct {
 	ready chan bool
+	db    *sqlx.DB
 }
 
 // Setup is run at the beginning of a new session, before ConsumeClaim
@@ -191,7 +205,19 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 				log.Printf("message channel was closed")
 				return nil
 			}
-			log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+			//log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
+
+			tx := consumer.db.MustBegin()
+
+			msg := strings.Split(string(message.Value), ",")
+			_, err := tx.Exec("INSERT INTO user(first_name, last_name, email, gender, ip_address, created_at) VALUES(?, ?, ?, ?, ?, ?)", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5])
+			if err != nil {
+				log.Println(err)
+				tx.Rollback()
+			} else {
+				tx.Commit()
+			}
+
 			session.MarkMessage(message, "")
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:

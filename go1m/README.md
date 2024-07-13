@@ -39,3 +39,10 @@ describe group
 ```bash
 $ docker compose exec kafka kafka-consumer-groups.sh --bootstrap-server localhost:19092 --describe --group group11
 ```
+
+async producer 10000 times
+![image](https://github.com/user-attachments/assets/4ba4b772-f2d4-4c0f-bc77-04c9ca1340e6)
+
+sync producer 10000 times
+![image](https://github.com/user-attachments/assets/5c3652bb-829b-4183-ac13-9c2971e8cdb6)
+
