@@ -40,9 +40,14 @@ describe group
 $ docker compose exec kafka kafka-consumer-groups.sh --bootstrap-server localhost:19092 --describe --group group11
 ```
 
-async producer 10000 times
+async producer 11000 times, 1 consumer
 ![image](https://github.com/user-attachments/assets/4ba4b772-f2d4-4c0f-bc77-04c9ca1340e6)
 
-sync producer 10000 times
+sync producer 11000 times, 1 consumer
 ![image](https://github.com/user-attachments/assets/5c3652bb-829b-4183-ac13-9c2971e8cdb6)
 
+sync, async producer 11000 times, 3 consumers(consumer group)
+3m 16.1s
+
+sync, async producer 11000 times, 3 consumers(consumer group)
+27.41s

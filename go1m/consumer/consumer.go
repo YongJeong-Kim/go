@@ -5,8 +5,10 @@ import (
 	"errors"
 	"flag"
 	"github.com/IBM/sarama"
+	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"go1m/consumer/es"
 	"log"
 	"os"
 	"os/signal"
@@ -88,19 +90,29 @@ func main() {
 	 * Setup a new Sarama consumer group
 	 */
 
-	db, err := sqlx.Connect("mysql", "root:1234@(localhost:33306)/aaa")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// connect db
+	//db, err := sqlx.Connect("mysql", "root:1234@(localhost:33306)/aaa")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//defer db.Close()
+	//
+	//if err := db.Ping(); err != nil {
+	//	log.Fatal(err)
+	//}
 
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
+	// connect es
+	es, err := elasticsearch7.NewClient(elasticsearch7.Config{
+		Addresses: []string{"http://localhost:9200"},
+	})
+	if err != nil {
+		panic(err)
 	}
 
 	consumer := Consumer{
 		ready: make(chan bool),
-		db:    db,
+		//db:    db,
+		es: es,
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -176,6 +188,7 @@ func toggleConsumptionFlow(client sarama.ConsumerGroup, isPaused *bool) {
 type Consumer struct {
 	ready chan bool
 	db    *sqlx.DB
+	es    *elasticsearch7.Client
 }
 
 // Setup is run at the beginning of a new session, before ConsumeClaim
@@ -207,17 +220,19 @@ func (consumer *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 			}
 			//log.Printf("Message claimed: value = %s, timestamp = %v, topic = %s", string(message.Value), message.Timestamp, message.Topic)
 
-			tx := consumer.db.MustBegin()
+			/*		tx := consumer.db.MustBegin()
 
+					msg := strings.Split(string(message.Value), ",")
+					_, err := tx.Exec("INSERT INTO user(first_name, last_name, email, gender, ip_address, created_at) VALUES(?, ?, ?, ?, ?, ?)", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5])
+					if err != nil {
+						log.Println(err)
+						tx.Rollback()
+					} else {
+						tx.Commit()
+					}*/
 			msg := strings.Split(string(message.Value), ",")
-			_, err := tx.Exec("INSERT INTO user(first_name, last_name, email, gender, ip_address, created_at) VALUES(?, ?, ?, ?, ?, ?)", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5])
-			if err != nil {
-				log.Println(err)
-				tx.Rollback()
-			} else {
-				tx.Commit()
-			}
-
+			es.CreateDoc(consumer.es, "products", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5])
+			//log.Println(message.Offset)
 			session.MarkMessage(message, "")
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:

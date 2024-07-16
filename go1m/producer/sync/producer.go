@@ -25,7 +25,6 @@ func main() {
 	produceStart := time.Now().UTC()
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		//log.Println(scanner.Text())
 		producer.SendMessage(&sarama.ProducerMessage{
 			Topic: "bbb",
 			Value: sarama.StringEncoder(scanner.Text()),
@@ -41,6 +40,10 @@ func NewSyncProducer(brokers []string, version sarama.KafkaVersion) sarama.SyncP
 	config.Producer.RequiredAcks = sarama.WaitForAll // Wait for all in-sync replicas to ack the message
 	config.Producer.Retry.Max = 10                   // Retry up to 10 times to produce the message
 	config.Producer.Return.Successes = true
+	//config.Producer.Partitioner = sarama.NewRoundRobinPartitioner
+	//config.Producer.Partitioner = sarama.NewHashPartitioner // default
+	//config.Producer.Partitioner = sarama.NewManualPartitioner
+	//config.Producer.Partitioner = sarama.NewRandomPartitioner
 	/*tlsConfig := createTlsConfiguration()
 	if tlsConfig != nil {
 		config.Net.TLS.Config = tlsConfig

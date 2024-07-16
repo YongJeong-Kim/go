@@ -4,6 +4,7 @@ go 1.22
 
 require (
 	github.com/IBM/sarama v1.43.2
+	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/jmoiron/sqlx v1.4.0
 )
