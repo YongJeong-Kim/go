@@ -1,0 +1,57 @@
+version: "3.8"
+
+services:
+  mysqlexporter:
+    image: prom/mysqld-exporter
+    container_name: mysqlexporter
+#    volumes:
+#      - ./my.cnf:/cfg/.my.cnf
+    command:
+#      - DATA_SOURCE_NAME="root:1234@(localhost:53306)/"
+      - "--collect.info_schema.processlist"
+#      - "--web.listen-address=:9104" # default 9104
+      - "--mysqld.username=root:1234"
+      - "--mysqld.address=masterex:3306"
+      - "--collect.global_status"
+      - "--collect.info_schema.innodb_metrics"
+      - "--collect.auto_increment.columns"
+      - "--collect.info_schema.processlist"
+      - "--collect.binlog_size"
+      - "--collect.info_schema.tablestats"
+      - "--collect.global_variables"
+      - "--collect.info_schema.query_response_time"
+      - "--collect.info_schema.userstats"
+      - "--collect.info_schema.tables"
+      - "--collect.perf_schema.tablelocks"
+      - "--collect.perf_schema.file_events"
+      - "--collect.perf_schema.eventswaits"
+      - "--collect.perf_schema.indexiowaits"
+      - "--collect.perf_schema.tableiowaits"
+      - "--collect.slave_status"
+    ports:
+      - 19104:9104
+#      - 48080:8080
+
+  masterex:
+    image: mysql
+    container_name: masterex
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: aaa
+    ports:
+      - "53306:3306"
+
+  promex:
+    image: prom/prometheus
+    container_name: promex
+    ports:
+      - 19090:9090
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./data:/prometheus
+
+  grafanaex:
+    image: grafana/grafana
+    container_name: grafanaex
+    ports:
+      - 13000:3000

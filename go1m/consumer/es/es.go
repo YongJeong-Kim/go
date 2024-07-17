@@ -26,7 +26,7 @@ func deleteAllDocs(es *elasticsearch7.Client, index string) {
 
 }
 
-func CreateDoc(es *elasticsearch7.Client, index string, firstname, lastname, email, gender, ipAddress, createdAt string) {
+func CreateDoc(es *elasticsearch7.Client, index string, firstname, lastname, email, gender, ipAddress, createdAt string, fn func()) {
 	q := fmt.Sprintf(`
 		{
 			"first_name": "%s",
@@ -46,6 +46,7 @@ func CreateDoc(es *elasticsearch7.Client, index string, firstname, lastname, ema
 	}
 	defer res.Body.Close()
 	//log.Println(res)
+	fn()
 }
 
 func createIndex(es *elasticsearch7.Client) {
@@ -53,7 +54,8 @@ func createIndex(es *elasticsearch7.Client) {
 	mapping := `
     {
       "settings": {
-        "number_of_shards": 3
+        "number_of_shards": 3,
+				"number_of_replicas": 3
       },
       "mappings": {
         "properties": {
