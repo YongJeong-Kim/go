@@ -25,26 +25,32 @@ func main() {
 	defer s.Session.Close(ctx)
 
 	/*uID, err := s.CreateUser(ctx, map[string]any{
-		"name": "dddname",
+		"name": "hhhname",
 	})
 	if err != nil {
 		panic(err)
 	}
-	log.Println(uID)*/
+	log.Println(uID)
 
 	s.FriendRequest(ctx, map[string]any{
-		"from": "dddname",
-		"to":   "aaaname",
+		"from": "hhhname",
+		"to":   "gggname",
 	})
 
-	/*s.FriendRequest(ctx, map[string]any{
-		"from": "aaaname",
-		"to":   "bbbname",
-	})*/
+	s.AcceptFriendRequest(ctx, map[string]any{
+		"request": "hhhname",
+		"approve": "gggname",
+	})
 
-	s.ListFriendRequests(ctx, map[string]any{
+	friends, _ := s.ListFriends(ctx, map[string]any{
 		"name": "aaaname",
 	})
+	log.Println(friends)*/
+	mf, _ := s.ListMutualFriends(ctx, map[string]any{
+		"name1": "aaaname",
+		"name2": "hhhname",
+	})
+	log.Println(mf)
 }
 
 func NewServer(s neo4j.SessionWithContext) *Server {
@@ -117,9 +123,9 @@ func (s *Server) FriendRequest(ctx context.Context, param map[string]any) error 
 func (s *Server) AcceptFriendRequest(ctx context.Context, param map[string]any) error {
 	_, err := s.Session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		_, err := tx.Run(ctx, `
-			MATCH (from:User {name: $from})
-			MATCH (to:User {name: $to})
-			MERGE (to)-[:FRIEND {status: ['accept']}]->(from)
+			MATCH (request:User {name: $request})
+			MATCH (approve:User {name: $approve})
+			MERGE (approve)-[:FRIEND {status: ['accept']}]->(request)
 		`, param)
 		if err != nil {
 			return nil, err
@@ -169,6 +175,83 @@ func (s *Server) ListFriendRequests(ctx context.Context, param map[string]any) (
 	}
 
 	return requests.([]ListFriendRequestsResult), nil
+}
+
+type ListFriendsResult struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	CreatedDate time.Time `json:"created_date"`
+}
+
+func (s *Server) ListFriends(ctx context.Context, param map[string]any) ([]ListFriendsResult, error) {
+	fs, err := s.Session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := tx.Run(ctx, `
+			MATCH (:User {name: $name})-[:FRIEND {status: ['accept']}]->(fs)
+			RETURN fs.id AS id, fs.name AS name, fs.createdDate AS createdDate
+		`, param)
+		if err != nil {
+			return nil, err
+		}
+
+		fs, err := result.Collect(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		var rz []ListFriendsResult
+		for _, f := range fs {
+			var rr ListFriendsResult
+			rr.ID = f.AsMap()["id"].(string)
+			rr.Name = f.AsMap()["name"].(string)
+			rr.CreatedDate = f.AsMap()["createdDate"].(time.Time)
+			rz = append(rz, rr)
+		}
+		return rz, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.([]ListFriendsResult), nil
+}
+
+type ListMutualFriendsResult struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	CreatedDate time.Time `json:"created_date"`
+}
+
+func (s *Server) ListMutualFriends(ctx context.Context, param map[string]any) ([]ListMutualFriendsResult, error) {
+	mf, err := s.Session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := tx.Run(ctx, `
+			MATCH (:User {name: $name1})-[:FRIEND]->(mf)<-[:FRIEND]-(:User {name: $name2})
+			RETURN mf.id AS id, mf.name AS name, mf.createdDate AS createdDate
+		`, param)
+		if err != nil {
+			return nil, err
+		}
+
+		mf, err := result.Collect(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		var mz []ListMutualFriendsResult
+		for _, m := range mf {
+			var f ListMutualFriendsResult
+			f.ID = m.AsMap()["id"].(string)
+			f.Name = m.AsMap()["name"].(string)
+			f.CreatedDate = m.AsMap()["createdDate"].(time.Time)
+			mz = append(mz, f)
+		}
+
+		return mz, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return mf.([]ListMutualFriendsResult), nil
 }
 
 func (s *Server) DeleteAll(ctx context.Context) error {
