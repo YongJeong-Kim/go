@@ -6,19 +6,24 @@ import (
 )
 
 type UserManager interface {
-	Create(ctx context.Context, param map[string]any) (string, error)
+	Create(ctx context.Context, name string) (string, error)
+	Get(ctx context.Context, id string) (*repository.GetResult, error)
 }
 
-func (u *User) Create(ctx context.Context, param map[string]any) (string, error) {
-	return u.UserManager.Create(ctx, param)
+func (u *User) Create(ctx context.Context, name string) (string, error) {
+	return u.User.Create(ctx, name)
+}
+
+func (u *User) Get(ctx context.Context, id string) (*repository.GetResult, error) {
+	return u.User.Get(ctx, id)
 }
 
 type User struct {
-	UserManager repository.UserManager
+	User repository.UserManager
 }
 
 func NewUser(userManager repository.UserManager) *User {
 	return &User{
-		UserManager: userManager,
+		User: userManager,
 	}
 }
