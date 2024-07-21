@@ -6,46 +6,46 @@ import (
 )
 
 type Friender interface {
-	Accept(ctx context.Context, param map[string]any) error
-	Count(ctx context.Context, param map[string]any) (int64, error)
-	List(ctx context.Context, param map[string]any) ([]repository.ListResult, error)
-	ListMutuals(ctx context.Context, param map[string]any) ([]repository.ListMutualsResult, error)
-	ListRequests(ctx context.Context, param map[string]any) ([]repository.ListRequestsResult, error)
-	MutualCount(ctx context.Context, param map[string]any) (int64, error)
-	Request(ctx context.Context, param map[string]any) error
-	RequestCount(ctx context.Context, param map[string]any) (int64, error)
+	Accept(ctx context.Context, requestUserID, approveUserID string) error
+	Count(ctx context.Context, userID string) (int64, error)
+	List(ctx context.Context, userID string) ([]repository.ListResult, error)
+	ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error)
+	ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error)
+	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
+	Request(ctx context.Context, fromUserID, toUserID string) error
+	RequestCount(ctx context.Context, userID string) (int64, error)
 }
 
-func (f *Friend) Accept(ctx context.Context, param map[string]any) error {
-	return f.Friend.Accept(ctx, param)
+func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
+	return f.Friend.Accept(ctx, requestUserID, approveUserID)
 }
 
-func (f *Friend) Count(ctx context.Context, param map[string]any) (int64, error) {
-	return f.Friend.Count(ctx, param)
+func (f *Friend) Count(ctx context.Context, userID string) (int64, error) {
+	return f.Friend.Count(ctx, userID)
 }
 
-func (f *Friend) List(ctx context.Context, param map[string]any) ([]repository.ListResult, error) {
-	return f.Friend.List(ctx, param)
+func (f *Friend) List(ctx context.Context, userID string) ([]repository.ListResult, error) {
+	return f.Friend.List(ctx, userID)
 }
 
-func (f *Friend) ListMutuals(ctx context.Context, param map[string]any) ([]repository.ListMutualsResult, error) {
-	return f.Friend.ListMutuals(ctx, param)
+func (f *Friend) ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error) {
+	return f.Friend.ListMutuals(ctx, userID, friendUserID)
 }
 
-func (f *Friend) ListRequests(ctx context.Context, param map[string]any) ([]repository.ListRequestsResult, error) {
-	return f.Friend.ListRequests(ctx, param)
+func (f *Friend) ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error) {
+	return f.Friend.ListRequests(ctx, userID)
 }
 
-func (f *Friend) MutualCount(ctx context.Context, param map[string]any) (int64, error) {
-	return f.Friend.MutualCount(ctx, param)
+func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int64, error) {
+	return f.Friend.MutualCount(ctx, userID1, userID2)
 }
 
-func (f *Friend) Request(ctx context.Context, param map[string]any) error {
-	return f.Friend.Request(ctx, param)
+func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error {
+	return f.Friend.Request(ctx, fromUserID, toUserID)
 }
 
-func (f *Friend) RequestCount(ctx context.Context, param map[string]any) (int64, error) {
-	return f.Friend.RequestCount(ctx, param)
+func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error) {
+	return f.Friend.RequestCount(ctx, userID)
 }
 
 type Friend struct {

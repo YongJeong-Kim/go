@@ -12,7 +12,21 @@ func (s *Server) SetupRouter() {
 	friendRouter := r.Group("/friends")
 	{
 		friendRouter.GET("", s.listFriends)
+		friendRouter.GET("/accept", s.friendAccept)
 		friendRouter.GET("/count", s.friendCount)
+
+		mutualRouter := r.Group("/mutual")
+		{
+			mutualRouter.GET("/:user_id", s.mutualFriends)
+			mutualRouter.GET("/:user_id/count", s.mutualFriendCount)
+		}
+
+		requestRouter := friendRouter.Group("request")
+		{
+			requestRouter.GET("", s.listFriendRequests)
+			requestRouter.POST("", s.friendRequest)
+			requestRouter.GET("/count", s.friendRequestCount)
+		}
 	}
 
 	userRouter := r.Group("/users")

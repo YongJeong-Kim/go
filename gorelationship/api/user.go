@@ -16,9 +16,7 @@ func (s *Server) createUser(c *gin.Context) {
 		return
 	}
 
-	id, err := s.Service.User.Create(c.Request.Context(), map[string]any{
-		"name": req.Name,
-	})
+	id, err := s.Service.User.Create(c.Request.Context(), req.Name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

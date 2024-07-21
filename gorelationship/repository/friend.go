@@ -7,14 +7,14 @@ import (
 )
 
 type Friender interface {
-	Accept(ctx context.Context, param map[string]any) error
-	Count(ctx context.Context, param map[string]any) (int64, error)
-	List(ctx context.Context, param map[string]any) ([]ListResult, error)
-	ListMutuals(ctx context.Context, param map[string]any) ([]ListMutualsResult, error)
-	ListRequests(ctx context.Context, param map[string]any) ([]ListRequestsResult, error)
-	MutualCount(ctx context.Context, param map[string]any) (int64, error)
-	Request(ctx context.Context, param map[string]any) error
-	RequestCount(ctx context.Context, param map[string]any) (int64, error)
+	Accept(ctx context.Context, requestUserID, approveUserID string) error
+	Count(ctx context.Context, name string) (int64, error)
+	List(ctx context.Context, userID string) ([]ListResult, error)
+	ListMutuals(ctx context.Context, userID, friendUserID string) ([]ListMutualsResult, error)
+	ListRequests(ctx context.Context, userID string) ([]ListRequestsResult, error)
+	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
+	Request(ctx context.Context, fromUserID, toUserID string) error
+	RequestCount(ctx context.Context, userID string) (int64, error)
 }
 
 type ListRequestsResult struct {
@@ -23,12 +23,14 @@ type ListRequestsResult struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
-func (f *Friend) ListRequests(ctx context.Context, param map[string]any) ([]ListRequestsResult, error) {
+func (f *Friend) ListRequests(ctx context.Context, userID string) ([]ListRequestsResult, error) {
 	requests, err := f.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name})-[:FRIEND]->(requests) 
+			MATCH (:User {id: $userID})-[:FRIEND]->(requests) 
 			RETURN requests.id AS id, requests.name AS name, requests.createdDate AS createdDate
-		`, param)
+		`, map[string]any{
+			"userID": userID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -51,13 +53,16 @@ func (f *Friend) ListRequests(ctx context.Context, param map[string]any) ([]List
 	return requests.([]ListRequestsResult), nil
 }
 
-func (f *Friend) Request(ctx context.Context, param map[string]any) error {
+func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error {
 	_, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		_, err := tx.Run(ctx, `
 			MATCH (from:User {name: $from})
 			MATCH (to:User {name: $to})
 			MERGE (from)-[:FRIEND {status: ['request']}]->(to)
-		`, param)
+		`, map[string]any{
+			"from": fromUserID,
+			"to":   toUserID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -71,13 +76,16 @@ func (f *Friend) Request(ctx context.Context, param map[string]any) error {
 	return nil
 }
 
-func (f *Friend) Accept(ctx context.Context, param map[string]any) error {
+func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
 	_, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		_, err := tx.Run(ctx, `
 			MATCH (request:User {name: $request})
 			MATCH (approve:User {name: $approve})
 			MERGE (approve)-[:FRIEND {status: ['accept']}]->(request)
-		`, param)
+		`, map[string]any{
+			"request": requestUserID,
+			"approve": approveUserID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -95,12 +103,14 @@ type ListResult struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
-func (f *Friend) List(ctx context.Context, param map[string]any) ([]ListResult, error) {
+func (f *Friend) List(ctx context.Context, userID string) ([]ListResult, error) {
 	fs, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name})-[:FRIEND {status: ['accept']}]->(fs)
+			MATCH (:User {id: $userID})-[:FRIEND {status: ['accept']}]->(fs)
 			RETURN fs.id AS id, fs.name AS name, fs.createdDate AS createdDate
-		`, param)
+		`, map[string]any{
+			"userID": userID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -133,12 +143,15 @@ type ListMutualsResult struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
-func (f *Friend) ListMutuals(ctx context.Context, param map[string]any) ([]ListMutualsResult, error) {
+func (f *Friend) ListMutuals(ctx context.Context, userID, friendUserID string) ([]ListMutualsResult, error) {
 	mf, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name1})-[:FRIEND]->(mf)<-[:FRIEND]-(:User {name: $name2})
+			MATCH (:User {id: $userID})-[:FRIEND]->(mf)<-[:FRIEND]-(:User {id: $friendUserID})
 			RETURN mf.id AS id, mf.name AS name, mf.createdDate AS createdDate
-		`, param)
+		`, map[string]any{
+			"userID":       userID,
+			"friendUserID": friendUserID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -166,12 +179,15 @@ func (f *Friend) ListMutuals(ctx context.Context, param map[string]any) ([]ListM
 	return mf.([]ListMutualsResult), nil
 }
 
-func (f *Friend) MutualCount(ctx context.Context, param map[string]any) (int64, error) {
+func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int64, error) {
 	cnt, err := f.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name1})-[:FRIEND]->(mf)<-[:FRIEND]-(:User {name: $name2})
+			MATCH (:User {id: $userID1})-[:FRIEND]->(mf)<-[:FRIEND]-(:User {userID: $userID2})
 			RETURN COUNT(mf) AS count
-		`, param)
+		`, map[string]any{
+			"userID1": userID1,
+			"userID2": userID2,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -189,12 +205,14 @@ func (f *Friend) MutualCount(ctx context.Context, param map[string]any) (int64, 
 	return cnt.(int64), nil
 }
 
-func (f *Friend) Count(ctx context.Context, param map[string]any) (int64, error) {
+func (f *Friend) Count(ctx context.Context, userID string) (int64, error) {
 	cnt, err := f.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name})-[:FRIEND {status: ['accept']}]->(fs)
+			MATCH (:User {name: $userID})-[:FRIEND {status: ['accept']}]->(fs)
 			RETURN COUNT(fs) AS count
-		`, param)
+		`, map[string]any{
+			"userID": userID,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -211,12 +229,14 @@ func (f *Friend) Count(ctx context.Context, param map[string]any) (int64, error)
 	return cnt.(int64), nil
 }
 
-func (f *Friend) RequestCount(ctx context.Context, param map[string]any) (int64, error) {
+func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error) {
 	cnt, err := f.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (:User {name: $name})-[:FRIEND {status: ['request']}]->(fs)
+			MATCH (:User {id: $userID})-[:FRIEND {status: ['request']}]->(fs)
 			RETURN COUNT(fs) AS count
-		`, param)
+		`, map[string]any{
+			"userID": userID,
+		})
 		if err != nil {
 			return nil, err
 		}

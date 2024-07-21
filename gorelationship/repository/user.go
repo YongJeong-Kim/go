@@ -43,13 +43,13 @@ type GetResult struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
-func (u *User) Get(ctx context.Context, id string) (*GetResult, error) {
+func (u *User) Get(ctx context.Context, userID string) (*GetResult, error) {
 	user, err := u.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
-			MATCH (u:User) WHERE u.id = $id
+			MATCH (u:User) WHERE u.id = $userID
 			RETURN u.id AS id, u.name AS name, u.createDate AS createdDate
 		`, map[string]any{
-			"id": id,
+			"userID": userID,
 		})
 		if err != nil {
 			return nil, err
