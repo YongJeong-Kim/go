@@ -8,7 +8,7 @@ import (
 
 type UserManager interface {
 	Create(ctx context.Context, name string) (string, error)
-	Get(ctx context.Context, id string) (*GetResult, error)
+	Get(ctx context.Context, userID string) (*GetResult, error)
 }
 
 func (u *User) Create(ctx context.Context, name string) (string, error) {
