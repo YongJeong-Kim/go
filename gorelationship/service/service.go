@@ -24,6 +24,8 @@ func newTestService() (context.Context, *Service) {
 	sess := config.NewSession(ctx, driver, config.DatabaseName)
 	var ru repository.UserManager = repository.NewUser(sess)
 	var rf repository.Friender = repository.NewFriend(sess)
+	var sf Friender = NewFriend(rf)
+	var su UserManager = NewUser(ru)
 
-	return ctx, NewService(rf, ru)
+	return ctx, NewService(sf, su)
 }

@@ -14,7 +14,7 @@ type Friender interface {
 	ListMutuals(ctx context.Context, userID, friendUserID string) ([]ListMutualsResult, error)
 	ListRequests(ctx context.Context, userID string) ([]ListRequestsResult, error)
 	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
-	Request(ctx context.Context, fromUserID, toUserID string) error
+	Request(ctx context.Context, requestUserID, approveUserID string) error
 	RequestCount(ctx context.Context, userID string) (int64, error)
 }
 
@@ -54,15 +54,42 @@ func (f *Friend) ListRequests(ctx context.Context, userID string) ([]ListRequest
 	return requests.([]ListRequestsResult), nil
 }
 
-func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error {
+func (f *Friend) Request(ctx context.Context, requestUserID, approveUserID string) error {
 	_, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		_, err := tx.Run(ctx, `
-			MATCH (from:User {name: $from})
-			MATCH (to:User {name: $to})
-			MERGE (from)-[:FRIEND {status: ['request']}]->(to)
+		rc, err := tx.Run(ctx, `
+			MATCH (r:User) WHERE r.id = $request
+			MATCH (a:User) WHERE a.id = $approve
+			RETURN r.id AS rID, a.id AS aID
 		`, map[string]any{
-			"from": fromUserID,
-			"to":   toUserID,
+			"request": requestUserID,
+			"approve": approveUserID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		r, err := rc.Single(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		rID := r.AsMap()["rID"]
+		if rID == nil {
+			return nil, errors.New("request user not found")
+		}
+
+		aID := r.AsMap()["aID"]
+		if aID == nil {
+			return nil, errors.New("approve user not found")
+		}
+
+		_, err = tx.Run(ctx, `
+			MATCH (r:User {id: $request})
+			MATCH (a:User {id: $approve})
+			MERGE (r)-[:FRIEND {status: ['request']}]->(a)
+		`, map[string]any{
+			"request": requestUserID,
+			"approve": approveUserID,
 		})
 		if err != nil {
 			return nil, err
@@ -79,14 +106,6 @@ func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error
 
 func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
 	_, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		/*_, err := tx.Run(ctx, `
-			MATCH (request:User {name: $request})
-			MATCH (approve:User {name: $approve})
-			MERGE (approve)-[:FRIEND {status: ['accept']}]->(request)
-		`, map[string]any{
-			"request": requestUserID,
-			"approve": approveUserID,
-		})*/
 		rc, err := tx.Run(ctx, `
 			MATCH (r:User) WHERE r.id = $request
 			MATCH (a:User) WHERE a.id = $approve
@@ -139,11 +158,23 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 		}
 
 		accept := r.AsMap()["accept"]
-		if accept == nil {
-			return nil, nil
+		if accept != nil {
+			return nil, errors.New("already friend")
 		}
 
-		return nil, errors.New("already friend")
+		_, err = tx.Run(ctx, `
+			MATCH (r:User) WHERE r.id = $request
+			MATCH (a:User) WHERE a.id = $approve
+			MERGE (a)-[:FRIEND {status: ['accept']}]->(r)
+		`, map[string]any{
+			"request": requestUserID,
+			"approve": approveUserID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	})
 	if err != nil {
 		return err

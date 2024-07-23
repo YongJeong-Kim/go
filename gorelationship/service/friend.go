@@ -14,7 +14,7 @@ type Friender interface {
 	ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error)
 	ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error)
 	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
-	Request(ctx context.Context, fromUserID, toUserID string) error
+	Request(ctx context.Context, requestUserID, approveUserID string) error
 	RequestCount(ctx context.Context, userID string) (int64, error)
 }
 
@@ -32,6 +32,7 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 	if err != nil {
 		return errors.New("invalid approve user uuid")
 	}
+
 	return f.Friend.Accept(ctx, requestUserID, approveUserID)
 }
 
@@ -55,8 +56,8 @@ func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int6
 	return f.Friend.MutualCount(ctx, userID1, userID2)
 }
 
-func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error {
-	return f.Friend.Request(ctx, fromUserID, toUserID)
+func (f *Friend) Request(ctx context.Context, requestUserID, approveUserID string) error {
+	return f.Friend.Request(ctx, requestUserID, approveUserID)
 }
 
 func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error) {
