@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"github.com/google/uuid"
 	"gorelationship/repository"
 )
 
@@ -17,6 +19,19 @@ type Friender interface {
 }
 
 func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
+	if requestUserID == approveUserID {
+		return errors.New("cannot accept yourself")
+	}
+
+	err := uuid.Validate(requestUserID)
+	if err != nil {
+		return errors.New("invalid request user uuid")
+	}
+
+	err = uuid.Validate(approveUserID)
+	if err != nil {
+		return errors.New("invalid approve user uuid")
+	}
 	return f.Friend.Accept(ctx, requestUserID, approveUserID)
 }
 

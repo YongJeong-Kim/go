@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"time"
 )
@@ -78,10 +79,18 @@ func (f *Friend) Request(ctx context.Context, fromUserID, toUserID string) error
 
 func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
 	_, err := f.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		_, err := tx.Run(ctx, `
+		/*_, err := tx.Run(ctx, `
 			MATCH (request:User {name: $request})
 			MATCH (approve:User {name: $approve})
 			MERGE (approve)-[:FRIEND {status: ['accept']}]->(request)
+		`, map[string]any{
+			"request": requestUserID,
+			"approve": approveUserID,
+		})*/
+		rc, err := tx.Run(ctx, `
+			MATCH (r:User) WHERE r.id = $request
+			MATCH (a:User) WHERE a.id = $approve
+			RETURN r.id AS rID, a.id AS aID
 		`, map[string]any{
 			"request": requestUserID,
 			"approve": approveUserID,
@@ -89,7 +98,52 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 		if err != nil {
 			return nil, err
 		}
-		return nil, nil
+
+		r, err := rc.Single(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		rID := r.AsMap()["rID"]
+		if rID == nil {
+			return nil, errors.New("request user not found")
+		}
+
+		aID := r.AsMap()["aID"]
+		if aID == nil {
+			return nil, errors.New("approve user not found")
+		}
+
+		rc, err = tx.Run(ctx, `
+			MATCH (r:User {id: $request})
+			MATCH (a:User {id: $approve})
+			MATCH (r)-[f1:FRIEND {status: ['request']}]->(a)
+			OPTIONAL MATCH (a)-[f2:FRIEND {status: ['accept']}]->(r)
+			RETURN f1.status AS request, f2.status AS accept
+		`, map[string]any{
+			"request": requestUserID,
+			"approve": approveUserID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		r, err = rc.Single(ctx)
+		if err != nil {
+			return nil, errors.New("You must first receive a friend request from " + requestUserID)
+		}
+
+		request := r.AsMap()["request"]
+		if request == nil {
+			return nil, errors.New("impossible case: " + requestUserID)
+		}
+
+		accept := r.AsMap()["accept"]
+		if accept == nil {
+			return nil, nil
+		}
+
+		return nil, errors.New("already friend")
 	})
 	if err != nil {
 		return err

@@ -47,7 +47,7 @@ func (u *User) Get(ctx context.Context, userID string) (*GetResult, error) {
 	user, err := u.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := tx.Run(ctx, `
 			MATCH (u:User) WHERE u.id = $userID
-			RETURN u.id AS id, u.name AS name, u.createDate AS createdDate
+			RETURN u.id AS id, u.name AS name, u.createdDate AS createdDate
 		`, map[string]any{
 			"userID": userID,
 		})
