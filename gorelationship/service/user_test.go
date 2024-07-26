@@ -42,6 +42,7 @@ func TestGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			ctx, svc, createdID, username := createUserForTest(t, 6)
 			tc.run(ctx, t, svc, createdID, username)
 		})

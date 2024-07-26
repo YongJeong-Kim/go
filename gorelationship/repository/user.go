@@ -7,34 +7,27 @@ import (
 )
 
 type UserManager interface {
-	Create(ctx context.Context, name string) (string, error)
-	Get(ctx context.Context, userID string) (*GetResult, error)
+	Create(ctx context.Context, tx neo4j.ManagedTransaction, name string) (string, error)
+	Get(ctx context.Context, tx neo4j.ManagedTransaction, userID string) (*GetResult, error)
 }
 
-func (u *User) Create(ctx context.Context, name string) (string, error) {
-	id, err := u.sess.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		result, err := tx.Run(ctx, `
-			CREATE (u:User {id: randomuuid(), name: $name, createdDate: datetime()})
-			RETURN u.id AS id
-		`, map[string]any{
-			"name": name,
-		})
-		if err != nil {
-			return "", err
-		}
-
-		user, err := result.Single(ctx)
-		if err != nil {
-			return "", err
-		}
-
-		return user.AsMap()["id"].(string), nil
+func (u *User) Create(ctx context.Context, tx neo4j.ManagedTransaction, name string) (string, error) {
+	result, err := tx.Run(ctx, `
+		CREATE (u:User {id: randomuuid(), name: $name, createdDate: datetime()})
+		RETURN u.id AS id
+	`, map[string]any{
+		"name": name,
 	})
 	if err != nil {
 		return "", err
 	}
 
-	return id.(string), nil
+	user, err := result.Single(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return user.AsMap()["id"].(string), nil
 }
 
 type GetResult struct {
@@ -43,42 +36,32 @@ type GetResult struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
-func (u *User) Get(ctx context.Context, userID string) (*GetResult, error) {
-	user, err := u.sess.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		result, err := tx.Run(ctx, `
-			MATCH (u:User) WHERE u.id = $userID
-			RETURN u.id AS id, u.name AS name, u.createdDate AS createdDate
-		`, map[string]any{
-			"userID": userID,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		user, err := result.Single(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		return &GetResult{
-			ID:          user.AsMap()["id"].(string),
-			Name:        user.AsMap()["name"].(string),
-			CreatedDate: user.AsMap()["createdDate"].(time.Time),
-		}, nil
+func (u *User) Get(ctx context.Context, tx neo4j.ManagedTransaction, userID string) (*GetResult, error) {
+	result, err := tx.Run(ctx, `
+		MATCH (u:User) WHERE u.id = $userID
+		RETURN u.id AS id, u.name AS name, u.createdDate AS createdDate
+	`, map[string]any{
+		"userID": userID,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return user.(*GetResult), nil
+	user, err := result.Single(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return &GetResult{
+		ID:          user.AsMap()["id"].(string),
+		Name:        user.AsMap()["name"].(string),
+		CreatedDate: user.AsMap()["createdDate"].(time.Time),
+	}, nil
 }
 
 type User struct {
-	sess neo4j.SessionWithContext
 }
 
-func NewUser(sess neo4j.SessionWithContext) *User {
-	return &User{
-		sess: sess,
-	}
+func NewUser() *User {
+	return &User{}
 }

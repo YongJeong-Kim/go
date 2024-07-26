@@ -19,7 +19,7 @@ func main() {
 	//repo := repository.NewRepository(rf, ru)
 
 	var sf service.Friender = service.NewFriend(rf)
-	var su service.UserManager = service.NewUser(ru)
+	var su service.UserManager = service.NewUser(sess, ru)
 	svc := service.NewService(sf, su)
 
 	server := api.NewServer(svc)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/google/uuid"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"gorelationship/repository"
 )
 
@@ -65,11 +66,13 @@ func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error)
 }
 
 type Friend struct {
+	Sess   neo4j.SessionWithContext
 	Friend repository.Friender
 }
 
-func NewFriend(friender repository.Friender) *Friend {
+func NewFriend(sess neo4j.SessionWithContext, friender repository.Friender) *Friend {
 	return &Friend{
+		Sess:   sess,
 		Friend: friender,
 	}
 }
