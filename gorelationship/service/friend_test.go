@@ -79,6 +79,79 @@ func TestAccept(t *testing.T) {
 	}
 }
 
+func TestRequest(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string)
+	}{
+		{
+			name: "OK",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "already send request",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.Error(t, err)
+				require.Equal(t, "already send request", err.Error())
+			},
+		},
+		{
+			name: "request user not found",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, "request user not found", acceptUserID)
+				require.Error(t, err)
+				require.Equal(t, "invalid request user uuid", err.Error())
+			},
+		},
+		{
+			name: "accept user not found",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, "accept user not found")
+				require.Error(t, err)
+				require.Equal(t, "invalid accept user uuid", err.Error())
+			},
+		},
+		{
+			name: "already friend",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Accept(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.Equal(t, "already friend", err.Error())
+			},
+		},
+		{
+			name: "request yourself",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, requestUserID)
+				require.Error(t, err)
+				require.Equal(t, "cannot request yourself", err.Error())
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, svc, createdID1, _ := createUserForTest(t, 6)
+			_, _, createdID2, _ := createUserForTest(t, 6)
+			tc.run(ctx, t, svc, createdID1, createdID2)
+		})
+	}
+}
+
+func TestFromRequestCount(t *testing.T) {
+
+}
+
 /*func TestListRequests(t *testing.T) {
 	testCases := []struct {
 		name string

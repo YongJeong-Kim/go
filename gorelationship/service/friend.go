@@ -10,18 +10,18 @@ import (
 )
 
 type Friender interface {
-	Accept(ctx context.Context, requestUserID, approveUserID string) error
+	Accept(ctx context.Context, requestUserID, acceptUserID string) error
 	Count(ctx context.Context, userID string) (int64, error)
 	List(ctx context.Context, userID string) ([]repository.ListResult, error)
 	ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error)
 	ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error)
 	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
-	Request(ctx context.Context, requestUserID, approveUserID string) error
-	RequestCount(ctx context.Context, userID string) (int64, error)
+	Request(ctx context.Context, requestUserID, acceptUserID string) error
+	FromRequestCount(ctx context.Context, userID string) (int64, error)
 }
 
-func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string) error {
-	if requestUserID == approveUserID {
+func (f *Friend) Accept(ctx context.Context, requestUserID, acceptUserID string) error {
+	if requestUserID == acceptUserID {
 		return errors.New("cannot accept yourself")
 	}
 
@@ -30,36 +30,34 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 		return errors.New("invalid request user uuid")
 	}
 
-	err = uuid.Validate(approveUserID)
+	err = uuid.Validate(acceptUserID)
 	if err != nil {
 		return errors.New("invalid approve user uuid")
 	}
 
 	_, err = neo4j.ExecuteWrite(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (struct{}, error) {
-		err := f.Friend.Validate(ctx, tx, requestUserID, approveUserID)
+		err := f.Friend.Validate(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
 
-		rs, err := f.Friend.RelationshipStatus(ctx, tx, requestUserID, approveUserID)
+		rs, err := f.Friend.RelationshipStatus(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
 
-		switch {
-		case rs.RequestUserID != nil && rs.AcceptUserID == nil:
-			// ok
-		case rs.RequestUserID == nil && rs.AcceptUserID != nil:
-			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
-		case rs.RequestUserID == nil && rs.AcceptUserID == nil:
+		switch rs {
+		case "NO":
 			return struct{}{}, errors.New("You must first receive a friend request from " + requestUserID)
-		case rs.RequestUserID != nil && rs.AcceptUserID != nil:
+		case "REQUEST":
+			// ok
+		case "FRIEND":
 			return struct{}{}, errors.New("already friend")
 		default:
-			return struct{}{}, fmt.Errorf("impossible default case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
+			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, acceptUserID)
 		}
 
-		created, err := f.Friend.Accept(ctx, tx, requestUserID, approveUserID)
+		created, err := f.Friend.Accept(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
@@ -108,32 +106,44 @@ func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int6
 	return f.Friend.MutualCount(ctx, userID1, userID2)
 }
 
-func (f *Friend) Request(ctx context.Context, requestUserID, approveUserID string) error {
-	_, err := neo4j.ExecuteWrite(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (struct{}, error) {
-		err := f.Friend.Validate(ctx, tx, requestUserID, approveUserID)
+func (f *Friend) Request(ctx context.Context, requestUserID, acceptUserID string) error {
+	if requestUserID == acceptUserID {
+		return errors.New("cannot request yourself")
+	}
+
+	err := uuid.Validate(requestUserID)
+	if err != nil {
+		return errors.New("invalid request user uuid")
+	}
+
+	err = uuid.Validate(acceptUserID)
+	if err != nil {
+		return errors.New("invalid accept user uuid")
+	}
+
+	_, err = neo4j.ExecuteWrite(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (struct{}, error) {
+		err := f.Friend.Validate(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
 
-		rs, err := f.Friend.RelationshipStatus(ctx, tx, requestUserID, approveUserID)
+		rs, err := f.Friend.RelationshipStatus(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
 
-		switch {
-		case rs.RequestUserID != nil && rs.AcceptUserID == nil:
-			return struct{}{}, errors.New("already send request")
-		case rs.RequestUserID == nil && rs.AcceptUserID != nil:
-			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
-		case rs.RequestUserID == nil && rs.AcceptUserID == nil:
+		switch rs {
+		case "NO":
 			// ok
-		case rs.RequestUserID != nil && rs.AcceptUserID != nil:
+		case "REQUEST":
+			return struct{}{}, errors.New("already send request")
+		case "FRIEND":
 			return struct{}{}, errors.New("already friend")
 		default:
-			return struct{}{}, fmt.Errorf("impossible default case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
+			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, acceptUserID)
 		}
 
-		created, err := f.Friend.Request(ctx, tx, requestUserID, approveUserID)
+		created, err := f.Friend.Request(ctx, tx, requestUserID, acceptUserID)
 		if err != nil {
 			return struct{}{}, err
 		}
@@ -150,8 +160,20 @@ func (f *Friend) Request(ctx context.Context, requestUserID, approveUserID strin
 	return nil
 }
 
-func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error) {
-	return f.Friend.RequestCount(ctx, userID)
+func (f *Friend) FromRequestCount(ctx context.Context, userID string) (int64, error) {
+	count, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (int64, error) {
+		count, err := f.Friend.FromRequestCount(ctx, tx, userID)
+		if err != nil {
+			return 0, err
+		}
+
+		return count, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
 
 type Friend struct {
