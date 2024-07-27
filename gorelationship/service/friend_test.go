@@ -78,6 +78,21 @@ func TestAccept(t *testing.T) {
 		})
 	}
 }
+
+/*func TestListRequests(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, approveUserID string)
+	}{
+		{
+			name: "OK",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, approveUserID string) {
+
+			},
+		},
+	}
+}*/
+
 func createFriendForTest(t *testing.T, usernameLen int) (string, string, string, string) {
 	ctx, svc, createdID1, username1 := createUserForTest(t, usernameLen)
 	_, _, createdID2, username2 := createUserForTest(t, usernameLen)
