@@ -48,7 +48,7 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 
 		switch {
 		case rs.RequestUserID != nil && rs.AcceptUserID == nil:
-			// ok accept
+			// ok
 		case rs.RequestUserID == nil && rs.AcceptUserID != nil:
 			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
 		case rs.RequestUserID == nil && rs.AcceptUserID == nil:
@@ -63,7 +63,6 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, approveUserID string
 		if err != nil {
 			return struct{}{}, err
 		}
-
 		if created == 0 {
 			return struct{}{}, errors.New("already friend")
 		}
@@ -110,24 +109,45 @@ func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int6
 }
 
 func (f *Friend) Request(ctx context.Context, requestUserID, approveUserID string) error {
-	fz, err := neo4j.ExecuteWrite(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (int64, error) {
+	_, err := neo4j.ExecuteWrite(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (struct{}, error) {
 		err := f.Friend.Validate(ctx, tx, requestUserID, approveUserID)
 		if err != nil {
-			return 0, err
+			return struct{}{}, err
 		}
-		// TODO check RelationshipStatus
-		err = f.Friend.Request(ctx, tx, requestUserID, approveUserID)
+
+		rs, err := f.Friend.RelationshipStatus(ctx, tx, requestUserID, approveUserID)
 		if err != nil {
-			return 0, err
+			return struct{}{}, err
 		}
-		return 0, nil
+
+		switch {
+		case rs.RequestUserID != nil && rs.AcceptUserID == nil:
+			return struct{}{}, errors.New("already send request")
+		case rs.RequestUserID == nil && rs.AcceptUserID != nil:
+			return struct{}{}, fmt.Errorf("impossible case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
+		case rs.RequestUserID == nil && rs.AcceptUserID == nil:
+			// ok
+		case rs.RequestUserID != nil && rs.AcceptUserID != nil:
+			return struct{}{}, errors.New("already friend")
+		default:
+			return struct{}{}, fmt.Errorf("impossible default case. check relationship req: %s, acc: %s", requestUserID, approveUserID)
+		}
+
+		created, err := f.Friend.Request(ctx, tx, requestUserID, approveUserID)
+		if err != nil {
+			return struct{}{}, err
+		}
+		if created == 0 {
+			return struct{}{}, errors.New("send request fail")
+		}
+
+		return struct{}{}, nil
 	})
 	if err != nil {
 		return err
 	}
-	_ = fz
+
 	return nil
-	//return f.Friend.Request(ctx, requestUserID, approveUserID)
 }
 
 func (f *Friend) RequestCount(ctx context.Context, userID string) (int64, error) {

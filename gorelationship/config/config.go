@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-	"log"
 )
 
 const (
@@ -21,7 +20,6 @@ func NewDriver(ctx context.Context, uri, username, password string) neo4j.Driver
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Connectivity successful")
 
 	return driver
 }
