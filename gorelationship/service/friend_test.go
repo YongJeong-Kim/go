@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/stretchr/testify/require"
 	"testing"
+	"time"
 )
 
 func TestAccept(t *testing.T) {
@@ -149,31 +150,271 @@ func TestRequest(t *testing.T) {
 }
 
 func TestFromRequestCount(t *testing.T) {
-
-}
-
-/*func TestListRequests(t *testing.T) {
 	testCases := []struct {
 		name string
-		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, approveUserID string)
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string)
 	}{
 		{
 			name: "OK",
-			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, approveUserID string) {
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
 
+				count, err := svc.Friend.FromRequestCount(ctx, acceptUserID)
+				require.NoError(t, err)
+				require.Equal(t, int64(1), count)
+			},
+		},
+		{
+			name: "invalid user id",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				count, err := svc.Friend.FromRequestCount(ctx, "invalid user id")
+				require.Error(t, err)
+				require.Equal(t, "invalid user uuid", err.Error())
+				require.Equal(t, int64(0), count)
 			},
 		},
 	}
-}*/
 
-func createFriendForTest(t *testing.T, usernameLen int) (string, string, string, string) {
-	ctx, svc, createdID1, username1 := createUserForTest(t, usernameLen)
-	_, _, createdID2, username2 := createUserForTest(t, usernameLen)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, svc, createdID1, _ := createUserForTest(t, 6)
+			_, _, createdID2, _ := createUserForTest(t, 6)
+			tc.run(ctx, t, svc, createdID1, createdID2)
+		})
+	}
+}
 
-	err := svc.Friend.Request(ctx, createdID1, createdID2)
-	require.NoError(t, err)
-	err = svc.Friend.Accept(ctx, createdID1, createdID2)
-	require.NoError(t, err)
+func TestCount(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string)
+	}{
+		{
+			name: "OK",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Accept(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
 
-	return createdID1, username1, createdID2, username2
+				cnt, err := svc.Friend.Count(ctx, acceptUserID)
+				require.NoError(t, err)
+				require.Equal(t, int64(1), cnt)
+			},
+		},
+		{
+			name: "invalid user id",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Accept(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+
+				cnt, err := svc.Friend.Count(ctx, "invalid user uuid")
+				require.Equal(t, "invalid user uuid", err.Error())
+				require.Equal(t, int64(0), cnt)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, svc, createdID1, _ := createUserForTest(t, 6)
+			_, _, createdID2, _ := createUserForTest(t, 6)
+			tc.run(ctx, t, svc, createdID1, createdID2)
+		})
+	}
+}
+
+func TestList(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string)
+	}{
+		{
+			name: "OK",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Accept(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+
+				fs, err := svc.Friend.List(ctx, acceptUserID)
+				require.NoError(t, err)
+				require.Equal(t, 1, len(fs))
+
+				for _, f := range fs {
+					require.Equal(t, requestUserID, f.ID)
+					require.NotEmpty(t, f.Name)
+					require.WithinDuration(t, time.Now().UTC(), f.CreatedDate, time.Second)
+				}
+			},
+		},
+		{
+			name: "invalid user id",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+				err = svc.Friend.Accept(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+
+				fs, err := svc.Friend.List(ctx, "invalid user uuid")
+				require.Equal(t, "invalid user uuid", err.Error())
+				require.Equal(t, 0, len(fs))
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, svc, createdID1, _ := createUserForTest(t, 6)
+			_, _, createdID2, _ := createUserForTest(t, 6)
+			tc.run(ctx, t, svc, createdID1, createdID2)
+		})
+	}
+}
+
+func TestListFromRequests(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string)
+	}{
+		{
+			name: "OK",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+
+				rs, err := svc.Friend.ListFromRequests(ctx, acceptUserID)
+				require.NoError(t, err)
+				require.Equal(t, 1, len(rs))
+
+				for _, f := range rs {
+					require.Equal(t, requestUserID, f.ID)
+					require.NotEmpty(t, f.Name)
+					require.WithinDuration(t, time.Now().UTC(), f.CreatedDate, time.Second)
+				}
+			},
+		},
+		{
+			name: "invalid user id",
+			run: func(ctx context.Context, t *testing.T, svc *Service, requestUserID, acceptUserID string) {
+				err := svc.Friend.Request(ctx, requestUserID, acceptUserID)
+				require.NoError(t, err)
+
+				rs, err := svc.Friend.ListFromRequests(ctx, "invalid user uuid")
+				require.Equal(t, "invalid user uuid", err.Error())
+				require.Equal(t, 0, len(rs))
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, svc, createdID1, _ := createUserForTest(t, 6)
+			_, _, createdID2, _ := createUserForTest(t, 6)
+			tc.run(ctx, t, svc, createdID1, createdID2)
+		})
+	}
+}
+
+func TestMutualCount(t *testing.T) {
+	testCases := []struct {
+		name string
+		run  func(t *testing.T)
+	}{
+		{
+			name: "OK",
+			run: func(t *testing.T) {
+				ctx, svc, userID, fs := createFriendForTest(t, 3, 6)
+
+				ctx1, svc1, userID1, _ := createUserForTest(t, 6)
+
+				friendRequestForTest(ctx1, t, svc1, userID1, fs)
+				friendAcceptForTest(ctx, t, svc, fs[0], []string{userID1})
+				friendAcceptForTest(ctx, t, svc, fs[1], []string{userID1})
+				friendAcceptForTest(ctx, t, svc, fs[2], []string{userID1})
+
+				cnt, err := svc.Friend.MutualCount(ctx, userID, userID1)
+				require.NoError(t, err)
+				require.Equal(t, int64(3), cnt)
+			},
+		},
+		{
+			name: "invalid user id1",
+			run: func(t *testing.T) {
+				ctx, svc, userID, _ := createUserForTest(t, 6)
+				cnt, err := svc.Friend.MutualCount(ctx, "invalid user id", userID)
+				require.Error(t, err)
+				require.Equal(t, "invalid user1 uuid", err.Error())
+				require.Equal(t, int64(0), cnt)
+			},
+		},
+		{
+			name: "invalid user id2",
+			run: func(t *testing.T) {
+				ctx, svc, userID, _ := createUserForTest(t, 6)
+				cnt, err := svc.Friend.MutualCount(ctx, userID, "invalid user id")
+				require.Error(t, err)
+				require.Equal(t, "invalid user2 uuid", err.Error())
+				require.Equal(t, int64(0), cnt)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			tc.run(t)
+		})
+	}
+}
+
+func createFriendRequestForTest(t *testing.T, requestNum int, usernameLen int) (context.Context, *Service, string, []string) {
+	ctx, svc, createdID1, _ := createUserForTest(t, usernameLen)
+
+	reqIDs := make([]string, requestNum)
+	for range requestNum {
+		_, _, createdID, _ := createUserForTest(t, usernameLen)
+		err := svc.Friend.Request(ctx, createdID1, createdID)
+		require.NoError(t, err)
+
+		reqIDs = append(reqIDs, createdID)
+	}
+	return ctx, svc, createdID1, reqIDs
+}
+
+func friendRequestForTest(ctx context.Context, t *testing.T, svc *Service, requestUserID string, userIDs []string) {
+	for _, u := range userIDs {
+		err := svc.Friend.Request(ctx, requestUserID, u)
+		require.NoError(t, err)
+	}
+}
+
+func friendAcceptForTest(ctx context.Context, t *testing.T, svc *Service, acceptUserID string, requestUserIDs []string) {
+	for _, r := range requestUserIDs {
+		err := svc.Friend.Accept(ctx, r, acceptUserID)
+		require.NoError(t, err)
+	}
+}
+
+func createFriendForTest(t *testing.T, friendNum, usernameLen int) (context.Context, *Service, string, []string) {
+	ctx, svc, createdID1, _ := createUserForTest(t, usernameLen)
+
+	fs := make([]string, friendNum)
+	for i := 0; i < friendNum; i++ {
+		c, s, createdID2, _ := createUserForTest(t, usernameLen)
+		err := svc.Friend.Request(ctx, createdID1, createdID2)
+		require.NoError(t, err)
+		err = s.Friend.Accept(c, createdID1, createdID2)
+		require.NoError(t, err)
+		fs[i] = createdID2
+	}
+
+	return ctx, svc, createdID1, fs
 }

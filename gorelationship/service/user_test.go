@@ -59,6 +59,7 @@ func createUserForTest(t *testing.T, usernameLen int) (context.Context, *Service
 	createdID, err := svc.User.Create(ctx, username)
 	require.NoError(t, err)
 	require.NoError(t, uuid.Validate(createdID))
+	require.Equal(t, usernameLen, len(username))
 
 	return ctx, svc, createdID, username
 }

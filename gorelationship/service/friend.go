@@ -13,8 +13,8 @@ type Friender interface {
 	Accept(ctx context.Context, requestUserID, acceptUserID string) error
 	Count(ctx context.Context, userID string) (int64, error)
 	List(ctx context.Context, userID string) ([]repository.ListResult, error)
-	ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error)
-	ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error)
+	ListMutuals(ctx context.Context, userID1, userID2 string) ([]repository.ListMutualsResult, error)
+	ListFromRequests(ctx context.Context, userID string) ([]repository.ListFromRequestsResult, error)
 	MutualCount(ctx context.Context, userID1, userID2 string) (int64, error)
 	Request(ctx context.Context, requestUserID, acceptUserID string) error
 	FromRequestCount(ctx context.Context, userID string) (int64, error)
@@ -75,20 +75,70 @@ func (f *Friend) Accept(ctx context.Context, requestUserID, acceptUserID string)
 }
 
 func (f *Friend) Count(ctx context.Context, userID string) (int64, error) {
-	return f.Friend.Count(ctx, userID)
+	err := uuid.Validate(userID)
+	if err != nil {
+		return 0, errors.New("invalid user uuid")
+	}
+
+	cnt, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (int64, error) {
+		cnt, err := f.Friend.Count(ctx, tx, userID)
+		if err != nil {
+			return 0, err
+		}
+
+		return cnt, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return cnt, nil
 }
 
 func (f *Friend) List(ctx context.Context, userID string) ([]repository.ListResult, error) {
-	return f.Friend.List(ctx, userID)
+	err := uuid.Validate(userID)
+	if err != nil {
+		return nil, errors.New("invalid user uuid")
+	}
+
+	fs, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) ([]repository.ListResult, error) {
+		fs, err := f.Friend.List(ctx, tx, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		return fs, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return fs, nil
 }
 
-func (f *Friend) ListMutuals(ctx context.Context, userID, friendUserID string) ([]repository.ListMutualsResult, error) {
-	return f.Friend.ListMutuals(ctx, userID, friendUserID)
+func (f *Friend) ListMutuals(ctx context.Context, userID1, userID2 string) ([]repository.ListMutualsResult, error) {
+	mutuals, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) ([]repository.ListMutualsResult, error) {
+		mutuals, err := f.Friend.ListMutuals(ctx, tx, userID1, userID2)
+		if err != nil {
+			return nil, err
+		}
+
+		return mutuals, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return mutuals, nil
 }
 
-func (f *Friend) ListRequests(ctx context.Context, userID string) ([]repository.ListRequestsResult, error) {
-	reqs, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) ([]repository.ListRequestsResult, error) {
-		reqs, err := f.Friend.ListRequests(ctx, tx, userID)
+func (f *Friend) ListFromRequests(ctx context.Context, userID string) ([]repository.ListFromRequestsResult, error) {
+	if err := uuid.Validate(userID); err != nil {
+		return nil, errors.New("invalid user uuid")
+	}
+
+	reqs, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) ([]repository.ListFromRequestsResult, error) {
+		reqs, err := f.Friend.ListFromRequests(ctx, tx, userID)
 		if err != nil {
 			return nil, err
 		}
@@ -98,12 +148,31 @@ func (f *Friend) ListRequests(ctx context.Context, userID string) ([]repository.
 	if err != nil {
 		return nil, err
 	}
+
 	return reqs, nil
-	//return f.Friend.ListRequests(ctx, userID)
 }
 
 func (f *Friend) MutualCount(ctx context.Context, userID1, userID2 string) (int64, error) {
-	return f.Friend.MutualCount(ctx, userID1, userID2)
+	if err := uuid.Validate(userID1); err != nil {
+		return 0, errors.New("invalid user1 uuid")
+	}
+	if err := uuid.Validate(userID2); err != nil {
+		return 0, errors.New("invalid user2 uuid")
+	}
+
+	cnt, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (int64, error) {
+		cnt, err := f.Friend.MutualCount(ctx, tx, userID1, userID2)
+		if err != nil {
+			return 0, err
+		}
+
+		return cnt, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return cnt, nil
 }
 
 func (f *Friend) Request(ctx context.Context, requestUserID, acceptUserID string) error {
@@ -161,6 +230,11 @@ func (f *Friend) Request(ctx context.Context, requestUserID, acceptUserID string
 }
 
 func (f *Friend) FromRequestCount(ctx context.Context, userID string) (int64, error) {
+	err := uuid.Validate(userID)
+	if err != nil {
+		return 0, errors.New("invalid user uuid")
+	}
+
 	count, err := neo4j.ExecuteRead(ctx, f.Sess, func(tx neo4j.ManagedTransaction) (int64, error) {
 		count, err := f.Friend.FromRequestCount(ctx, tx, userID)
 		if err != nil {
