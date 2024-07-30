@@ -71,9 +71,9 @@ func (s *Server) mutualFriends(c *gin.Context) {
 	c.JSON(http.StatusOK, friends)
 }
 
-func (s *Server) listFriendRequests(c *gin.Context) {
+func (s *Server) listFromRequests(c *gin.Context) {
 	userID := c.GetHeader("user")
-	reqs, err := s.Service.Friend.ListRequests(c.Request.Context(), userID)
+	reqs, err := s.Service.Friend.ListFromRequests(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -101,7 +101,7 @@ func (s *Server) mutualFriendCount(c *gin.Context) {
 
 func (s *Server) friendRequest(c *gin.Context) {
 	var req struct {
-		UserID string `json:"user_id"`
+		UserID string `json:"user_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -117,9 +117,9 @@ func (s *Server) friendRequest(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-func (s *Server) friendRequestCount(c *gin.Context) {
+func (s *Server) fromRequestCount(c *gin.Context) {
 	userID := c.GetHeader("user")
-	count, err := s.Service.Friend.RequestCount(c.Request.Context(), userID)
+	count, err := s.Service.Friend.FromRequestCount(c.Request.Context(), userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

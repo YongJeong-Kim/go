@@ -278,11 +278,8 @@ func (f *Friend) RelationshipStatus(ctx context.Context, tx neo4j.ManagedTransac
 }
 
 type Friend struct {
-	sess neo4j.SessionWithContext
 }
 
-func NewFriend(sess neo4j.SessionWithContext) *Friend {
-	return &Friend{
-		sess: sess,
-	}
+func NewFriend() *Friend {
+	return &Friend{}
 }

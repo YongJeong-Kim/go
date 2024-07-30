@@ -14,11 +14,11 @@ func main() {
 	sess := config.NewSession(ctx, driver, config.DatabaseName)
 	defer sess.Close(ctx)
 
-	var rf repository.Friender = repository.NewFriend(sess)
-	var ru repository.UserManager = repository.NewUser(sess)
+	var rf repository.Friender = repository.NewFriend()
+	var ru repository.UserManager = repository.NewUser()
 	//repo := repository.NewRepository(rf, ru)
 
-	var sf service.Friender = service.NewFriend(rf)
+	var sf service.Friender = service.NewFriend(sess, rf)
 	var su service.UserManager = service.NewUser(sess, ru)
 	svc := service.NewService(sf, su)
 
