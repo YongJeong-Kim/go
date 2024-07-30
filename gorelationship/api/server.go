@@ -36,6 +36,7 @@ func (s *Server) SetupRouter() {
 	userRouter := r.Group("/users")
 	{
 		userRouter.POST("", s.createUser)
+		userRouter.GET("/:user_id", s.getUser)
 	}
 
 	s.Router = r
