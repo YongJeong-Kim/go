@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"gorelationship/repository"
 )
@@ -28,6 +30,10 @@ func (u *User) Create(ctx context.Context, name string) (string, error) {
 }
 
 func (u *User) Get(ctx context.Context, userID string) (*repository.GetResult, error) {
+	if err := uuid.Validate(userID); err != nil {
+		return nil, errors.New("invalid user uuid")
+	}
+
 	user, err := neo4j.ExecuteRead(ctx, u.Sess, func(tx neo4j.ManagedTransaction) (*repository.GetResult, error) {
 		user, err := u.User.Get(ctx, tx, userID)
 		if err != nil {

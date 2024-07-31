@@ -2,7 +2,11 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
+	"go.uber.org/mock/gomock"
 	"gorelationship/service"
+	mockfriendsvc "gorelationship/service/mock/friend"
+	mockusersvc "gorelationship/service/mock/user"
+	"testing"
 )
 
 func (s *Server) SetupRouter() {
@@ -19,7 +23,7 @@ func (s *Server) SetupRouter() {
 			acceptRouter.PUT("", s.friendAccept)
 		}
 
-		mutualRouter := r.Group("/mutual")
+		mutualRouter := friendRouter.Group("/mutual")
 		{
 			mutualRouter.GET("/:user_id", s.mutualFriends)
 			mutualRouter.GET("/:user_id/count", s.mutualFriendCount)
@@ -51,4 +55,17 @@ func NewServer(svc *service.Service) *Server {
 	return &Server{
 		Service: svc,
 	}
+}
+
+func newTestServer(t *testing.T) (*Server, *mockfriendsvc.MockFriender, *mockusersvc.MockUserManager) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mf := mockfriendsvc.NewMockFriender(ctrl)
+	mu := mockusersvc.NewMockUserManager(ctrl)
+
+	svc := service.NewService(mf, mu)
+	svr := NewServer(svc)
+	svr.SetupRouter()
+
+	return svr, mf, mu
 }

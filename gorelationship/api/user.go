@@ -40,7 +40,7 @@ func (s *Server) getUser(c *gin.Context) {
 
 	user, err := s.Service.User.Get(c.Request.Context(), req.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
 		return
