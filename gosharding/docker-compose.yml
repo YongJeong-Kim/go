@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  mysql-shard0:
+    image: mysql
+    container_name: mysql-shard0
+    ports:
+      - "43060:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: aaa
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  mysql-shard1:
+    image: mysql
+    container_name: mysql-shard1
+    ports:
+      - "43061:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: aaa
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  mysql-shard2:
+    image: mysql
+    container_name: mysql-shard2
+    ports:
+      - "43062:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: aaa
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
