@@ -1,40 +1,82 @@
 package service
 
 import (
-	"context"
 	"github.com/jmoiron/sqlx"
 	"gosharding/repository"
 	"gosharding/shard"
 	"log"
+	"sync"
 )
 
-func (s *Service) Create(ctx context.Context, id, name string) error {
-	idx := s.Shard.Index(id)
-	err := s.ExecTx(s.Repo.DBs[idx], func(tx *repository.Tx) error {
-		err := s.Repo.User.Create(context.Background(), tx, id, name)
-		if err != nil {
-			return err
-		}
+func multiSelect[T any](dbs []*sqlx.DB, fnTx func(*sqlx.DB) ([]T, error)) ([]T, error) {
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 
-		return nil
-	})
-	if err != nil {
-		return err
+	result := make([]T, 0)
+	errs := make([]error, 0)
+	errCh := make(chan error)
+	defer close(errCh)
+
+	for _, db := range dbs {
+		wg.Add(1)
+		go func(db *sqlx.DB) {
+			defer wg.Done()
+			ts, errTx := fnTx(db)
+			switch errTx {
+			case nil:
+				mu.Lock()
+				result = append(result, ts...)
+				mu.Unlock()
+				errCh <- nil
+			default:
+				errCh <- errTx
+			}
+		}(db)
+
+		select {
+		case e := <-errCh:
+			if e != nil {
+				errs = append(errs, e)
+			}
+		}
 	}
-	return nil
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return result, nil
 }
 
-func (s *Service) ExecTx(db *sqlx.DB, fn func(*repository.Tx) error) error {
+func (s *Service) execTx(db *sqlx.DB, fn func(*repository.Tx) error) error {
 	tx := db.MustBegin()
 	repo := repository.NewTx(tx)
 	err := fn(repo)
 	if err != nil {
-		if err := tx.Rollback(); err != nil {
+		errRb := tx.Rollback()
+		if errRb != nil {
 			log.Println("Rollback failed:", err)
-			return err
+			return errRb
 		}
+		return err
 	}
 	return tx.Commit()
+}
+
+func execTxReturn[T any](db *sqlx.DB, fn func(*repository.Tx) (T, error)) (*T, error) {
+	tx := db.MustBegin()
+	repo := repository.NewTx(tx)
+	result, err := fn(repo)
+	if err != nil {
+		errRb := tx.Rollback()
+		if errRb != nil {
+			log.Println("Rollback failed:", err)
+			return nil, errRb
+		}
+		return nil, err
+	}
+
+	return &result, tx.Commit()
 }
 
 type Service struct {
