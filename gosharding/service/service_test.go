@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func TestGet(t *testing.T) {
+func TestGet1(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	cfg := config.LoadDBConfig("../")

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"gosharding/repository"
 	"time"
@@ -49,4 +50,13 @@ func (s *Service) ListRangeCreatedAt(ctx context.Context, start, end time.Time) 
 	}
 
 	return rr, nil
+}
+
+func NewUserID() (string, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+
+	return id.String(), nil
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/jmoiron/sqlx"
+	"gosharding/config"
 	"gosharding/repository"
 	"gosharding/shard"
 	"log"
@@ -88,5 +89,17 @@ func NewService(repo *repository.Repository, shard *shard.Shard) *Service {
 	return &Service{
 		Repo:  repo,
 		Shard: shard,
+	}
+}
+
+func newTestService() *Service {
+	cfg := config.LoadDBConfig("../")
+	dbs := config.ConnDBs(cfg, cfg.ShardCount)
+	repo := repository.NewRepository(dbs, repository.NewUser())
+	shd := shard.NewShard(cfg.ShardCount)
+
+	return &Service{
+		Repo:  repo,
+		Shard: shd,
 	}
 }
